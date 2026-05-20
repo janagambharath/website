@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://images.unsplash.com">
   <link rel="preconnect" href="https://upload.wikimedia.org">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="improvements.css">
 </head>
 <body>
   <canvas id="star-canvas" aria-hidden="true"></canvas>
@@ -194,7 +195,7 @@
       <path d="M0 420 L80 300 L160 340 L250 255 L335 318 L430 230 L515 300 L610 235 L700 315 L790 260 L900 320 L900 420 Z" fill="#0b1118" opacity="0.94"/>
       <path d="M0 420 C120 380 210 405 330 370 C445 335 565 405 680 362 C770 330 840 358 900 342 L900 420 Z" fill="#05060a"/>
     </svg>
-    <div class="l0-candle" aria-hidden="true">
+    <div class="l0-candle" id="l0-candle" role="button" tabindex="0" aria-label="Blow out the candle">
       <div class="l0-flame"></div>
       <div class="l0-wick"></div>
       <div class="l0-candle-body"></div>
@@ -363,5 +364,6 @@
   </section>
 
   <script src="script.js"></script>
+  <script src="improvements.js"></script>
 </body>
 </html>
