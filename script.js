@@ -1,528 +1,533 @@
-/* ═══════════════════════════════════════════════════════
-   JILEBI'S BIRTHDAY WORLD — script.js
-   "Unlocking Her World" — Interactive Engine
-   ═══════════════════════════════════════════════════════ */
-
 'use strict';
 
-/* ─── UTILS ──────────────────────────────────────────── */
+const IMG = {
+  kedarnath: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/The_kedarnath_temple_and_himalyas_.jpg/1280px-The_kedarnath_temple_and_himalyas_.jpg',
+  house: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/House_in_the_Himalayas.jpg/1280px-House_in_the_Himalayas.jpg',
+  flags: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Colorful_Prayer_Flags_%28Unsplash%29.jpg/1280px-Colorful_Prayer_Flags_%28Unsplash%29.jpg',
+  night: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1600&q=80',
+  tea: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=1400&q=80',
+  rain: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1400&q=80',
+  room: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1400&q=80',
+  road: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1500&q=80',
+  mountains: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1500&q=80',
+  sky: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1500&q=80'
+};
+
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+
 const Utils = {
-  // Haptic feedback
-  vibrate(pattern = [30]) {
+  rand(min, max) {
+    return Math.random() * (max - min) + min;
+  },
+
+  randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  },
+
+  wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  },
+
+  vibrate(pattern = [25]) {
     if (navigator.vibrate) navigator.vibrate(pattern);
   },
 
-  // Typewriter effect
-  typewriter(el, text, speed = 45, onDone) {
-    el.style.opacity = '1';
-    let i = 0;
-    const tick = () => {
-      el.textContent = text.slice(0, i);
-      i++;
-      if (i <= text.length) setTimeout(tick, speed);
-      else if (onDone) onDone();
+  typewriter(el, text, speed = 42, token) {
+    return new Promise(resolve => {
+      if (!el) {
+        resolve();
+        return;
+      }
+
+      el.textContent = '';
+      el.style.opacity = '1';
+      let i = 0;
+
+      const tick = () => {
+        if (token && token.cancelled) {
+          resolve();
+          return;
+        }
+
+        el.textContent = text.slice(0, i);
+        i += 1;
+
+        if (i <= text.length) {
+          setTimeout(tick, speed);
+        } else {
+          resolve();
+        }
+      };
+
+      tick();
+    });
+  },
+
+  setImage(img, src, alt) {
+    if (!img) return;
+    img.classList.remove('image-failed');
+    img.alt = alt || '';
+    img.onerror = () => {
+      img.removeAttribute('src');
+      img.alt = `${alt || 'Image'} could not load`;
+      img.classList.add('image-failed');
     };
-    tick();
+    img.src = src;
   },
 
-  // Fade in element
-  fadeIn(el, duration = 600, delay = 0) {
-    return new Promise(resolve => {
-      el.style.transition = `opacity ${duration}ms cubic-bezier(0.4,0,0.2,1) ${delay}ms`;
-      el.style.opacity = '0';
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          el.style.opacity = '1';
-          setTimeout(resolve, duration + delay);
-        });
-      });
-    });
-  },
-
-  // Fade out element
-  fadeOut(el, duration = 400) {
-    return new Promise(resolve => {
-      el.style.transition = `opacity ${duration}ms cubic-bezier(0.4,0,0.2,1)`;
-      el.style.opacity = '0';
-      setTimeout(resolve, duration);
-    });
-  },
-
-  // Random range
-  rand(min, max) { return Math.random() * (max - min) + min; },
-  randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; },
-
-  // Debounce
-  debounce(fn, wait) {
-    let t;
-    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
-  },
-
-  // Wait
-  wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+  saveProgressPatch(patch) {
+    Object.assign(LevelManager.progress, patch);
+    LevelManager.save();
+  }
 };
 
-/* ─── AUDIO MANAGER ──────────────────────────────────── */
+const ImagePreloader = {
+  preload() {
+    Object.values(IMG).forEach(src => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = src;
+    });
+  }
+};
+
 const AudioManager = {
-  bgm: null,
   muted: false,
   started: false,
-  volume: 0.32,
+  ready: false,
+  volume: 0.26,
+  oscillators: [],
 
   init() {
-    this.bgm = document.getElementById('bgm');
-    this.bgm.volume = 0;
-    document.getElementById('mute-btn').addEventListener('click', () => this.toggleMute());
+    this.button = $('#mute-btn');
+    this.button.addEventListener('click', () => this.toggleMute());
 
-    // Use a gentle ambient sound from a CDN-hosted source
-    // Pixabay ambient / Freesound ambient — using inline oscillator as fallback
-    this.createAmbientSynth();
-  },
-
-  createAmbientSynth() {
-    // We'll create a gentle ambient tone using Web Audio API
-    // This is silent until user gesture, fully client-side
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
       this.masterGain = this.ctx.createGain();
       this.masterGain.gain.value = 0;
       this.masterGain.connect(this.ctx.destination);
       this.ready = true;
-    } catch(e) {
+    } catch (err) {
       this.ready = false;
     }
   },
 
-  playAmbient() {
+  async start() {
     if (!this.ready || this.started) return;
     this.started = true;
 
     try {
-      if (this.ctx.state === 'suspended') this.ctx.resume();
+      if (this.ctx.state === 'suspended') await this.ctx.resume();
 
-      // Create a multi-layered ambient pad
-      const freqs = [110, 146.83, 164.81, 220, 261.63];
-      freqs.forEach((freq, i) => {
+      const freqs = [98, 146.83, 196, 220, 293.66];
+      freqs.forEach((freq, idx) => {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-        const panner = this.ctx.createStereoPanner();
-
-        osc.type = i % 2 === 0 ? 'sine' : 'triangle';
-        osc.frequency.value = freq;
-
-        // Slow frequency wobble
+        const pan = this.ctx.createStereoPanner();
         const lfo = this.ctx.createOscillator();
         const lfoGain = this.ctx.createGain();
-        lfo.frequency.value = 0.1 + i * 0.05;
-        lfoGain.gain.value = freq * 0.005;
+
+        osc.type = idx % 2 ? 'triangle' : 'sine';
+        osc.frequency.value = freq;
+
+        lfo.frequency.value = 0.035 + idx * 0.013;
+        lfoGain.gain.value = freq * 0.004;
         lfo.connect(lfoGain);
         lfoGain.connect(osc.frequency);
-        lfo.start();
 
-        gain.gain.value = 0.015 - i * 0.002;
-        panner.pan.value = (i % 3 - 1) * 0.3;
+        gain.gain.value = 0.012 - idx * 0.0012;
+        pan.pan.value = (idx - 2) * 0.18;
 
         osc.connect(gain);
-        gain.connect(panner);
-        panner.connect(this.masterGain);
+        gain.connect(pan);
+        pan.connect(this.masterGain);
+
         osc.start();
+        lfo.start();
+        this.oscillators.push(osc, lfo);
       });
 
-      // Fade in
       this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
       this.masterGain.gain.linearRampToValueAtTime(this.volume, this.ctx.currentTime + 3);
-
-    } catch(e) {}
+    } catch (err) {
+      this.ready = false;
+    }
   },
 
   toggleMute() {
     this.muted = !this.muted;
-    const btn = document.getElementById('mute-btn');
-    btn.textContent = this.muted ? '🔇' : '🔊';
+    this.button.textContent = this.muted ? 'off' : '\u266b';
     if (this.ready && this.masterGain) {
-      this.masterGain.gain.setTargetAtTime(
-        this.muted ? 0 : this.volume,
-        this.ctx.currentTime, 0.3
-      );
+      this.masterGain.gain.setTargetAtTime(this.muted ? 0 : this.volume, this.ctx.currentTime, 0.22);
     }
   },
 
-  // Play a soft chime sound effect
-  playChime() {
+  chime(kind = 'soft') {
     if (!this.ready || this.muted) return;
+
     try {
-      const osc = this.ctx.createOscillator();
+      const now = this.ctx.currentTime;
       const gain = this.ctx.createGain();
+      const osc = this.ctx.createOscillator();
+      const high = kind === 'unlock' ? 1174.66 : 880;
+      const low = kind === 'deep' ? 246.94 : 440;
+
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, this.ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(440, this.ctx.currentTime + 0.8);
-      gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.2);
+      osc.frequency.setValueAtTime(high, now);
+      osc.frequency.exponentialRampToValueAtTime(low, now + 0.75);
+      gain.gain.setValueAtTime(kind === 'deep' ? 0.12 : 0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+
       osc.connect(gain);
       gain.connect(this.ctx.destination);
-      osc.start();
-      osc.stop(this.ctx.currentTime + 1.2);
-    } catch(e) {}
+      osc.start(now);
+      osc.stop(now + 1.15);
+    } catch (err) {}
   },
 
-  // Play star catch sound
-  playStarCatch() {
+  tick() {
     if (!this.ready || this.muted) return;
+
     try {
+      const now = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(1320, this.ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(2640, this.ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1320, now);
+      osc.frequency.exponentialRampToValueAtTime(1760, now + 0.12);
+      gain.gain.setValueAtTime(0.11, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
       osc.connect(gain);
       gain.connect(this.ctx.destination);
-      osc.start();
-      osc.stop(this.ctx.currentTime + 0.25);
-    } catch(e) {}
-  },
-
-  // Play card whoosh
-  playWhoosh() {
-    if (!this.ready || this.muted) return;
-    try {
-      const noise = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      noise.type = 'sawtooth';
-      noise.frequency.setValueAtTime(200, this.ctx.currentTime);
-      noise.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.3);
-      gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
-      noise.connect(gain);
-      gain.connect(this.ctx.destination);
-      noise.start();
-      noise.stop(this.ctx.currentTime + 0.3);
-    } catch(e) {}
+      osc.start(now);
+      osc.stop(now + 0.24);
+    } catch (err) {}
   }
 };
 
-/* ─── PARTICLE SYSTEM ────────────────────────────────── */
 const ParticleSystem = {
-  canvas: null,
-  ctx: null,
-  stars: [],
-  animFrame: null,
-
   init() {
-    this.canvas = document.getElementById('star-canvas');
+    this.canvas = $('#star-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.resize();
+    this.createStars();
     window.addEventListener('resize', () => this.resize());
-    this.createStars(80);
     this.animate();
   },
 
   resize() {
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    this.canvas.width = Math.floor(window.innerWidth * dpr);
+    this.canvas.height = Math.floor(window.innerHeight * dpr);
+    this.canvas.style.width = `${window.innerWidth}px`;
+    this.canvas.style.height = `${window.innerHeight}px`;
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   },
 
-  createStars(count) {
-    this.stars = [];
-    for (let i = 0; i < count; i++) {
-      this.stars.push({
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        r: Utils.rand(0.4, 2.2),
-        opacity: Utils.rand(0.1, 0.9),
-        speed: Utils.rand(0.15, 0.6),
-        phase: Utils.rand(0, Math.PI * 2),
-        drift: Utils.rand(-0.08, 0.08)
-      });
-    }
+  createStars() {
+    const count = window.innerWidth < 600 ? 70 : 110;
+    this.stars = Array.from({ length: count }, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      r: Utils.rand(0.4, 1.8),
+      phase: Utils.rand(0, Math.PI * 2),
+      speed: Utils.rand(0.25, 0.9),
+      drift: Utils.rand(-0.05, 0.05)
+    }));
   },
 
   animate() {
-    const { ctx, canvas, stars } = this;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    const t = performance.now() * 0.001;
 
-    const t = Date.now() * 0.001;
-    stars.forEach(s => {
-      s.opacity = 0.2 + 0.5 * (0.5 + 0.5 * Math.sin(t * s.speed + s.phase));
-      s.x += s.drift;
+    this.stars.forEach(star => {
+      star.x += star.drift;
+      if (star.x < -10) star.x = window.innerWidth + 10;
+      if (star.x > window.innerWidth + 10) star.x = -10;
 
-      if (s.x > canvas.width + 10) s.x = -10;
-      if (s.x < -10) s.x = canvas.width + 10;
-
+      const alpha = 0.18 + 0.58 * (0.5 + 0.5 * Math.sin(t * star.speed + star.phase));
       ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(253,246,236,${s.opacity})`;
+      ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(248,239,227,${alpha})`;
       ctx.fill();
-
-      // Occasional gold stars
-      if (s.r > 1.5) {
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r * 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(232,201,125,${s.opacity * 0.15})`;
-        ctx.fill();
-      }
     });
 
-    this.animFrame = requestAnimationFrame(() => this.animate());
+    requestAnimationFrame(() => this.animate());
   }
 };
 
-/* ─── LEVEL MANAGER ──────────────────────────────────── */
 const LevelManager = {
   current: -1,
   progress: {},
+  key: 'jilebi_progress',
+  labels: ['Gate', 'Star Gate', 'Her Vibe', 'Dream Path', 'Memories', 'Chaos', 'Letter', 'Final Sky'],
+  bridges: {
+    1: ['Level 1', 'The Star Gate', 'Catch enough light to open what is waiting.'],
+    2: ['Level 2', 'Her Vibe Map', 'Some people are not simple. She never was.'],
+    3: ['Level 3', 'Dream Path', 'Now the map moves from who she is to where her heart wants to go.'],
+    4: ['Level 4', 'Memory Constellation', 'The smallest moments are about to start glowing.'],
+    5: ['Level 5', 'Soft Chaos Room', 'A little play before the quiet part.'],
+    6: ['Level 6', 'The Letter', 'After all the gates, the words can finally arrive.'],
+    7: ['Level 7', 'Final Sky', 'No task now. Just watch.']
+  },
 
   init() {
-    // Check for returning user
     try {
-      const saved = localStorage.getItem('jilebi_progress');
-      if (saved) {
-        this.progress = JSON.parse(saved);
-        if (this.progress.level > 0) {
-          this.showReturnScreen();
-          return;
-        }
-      }
-    } catch(e) {}
+      this.progress = JSON.parse(localStorage.getItem(this.key) || '{}');
+    } catch (err) {
+      this.progress = {};
+    }
 
-    this.showLevel(0);
+    if (this.progress.level > 0) {
+      this.showReturnScreen();
+    } else {
+      this.showLevel(0);
+    }
   },
 
   save() {
     try {
-      localStorage.setItem('jilebi_progress', JSON.stringify({
+      localStorage.setItem(this.key, JSON.stringify({
         ...this.progress,
         level: this.current,
         timestamp: Date.now()
       }));
-    } catch(e) {}
+    } catch (err) {}
   },
 
   showReturnScreen() {
-    const screen = document.getElementById('return-screen');
+    const screen = $('#return-screen');
     screen.classList.add('visible');
 
-    document.getElementById('continue-btn').onclick = () => {
+    $('#continue-btn').onclick = () => {
       screen.classList.remove('visible');
-      const lvl = Math.max(0, this.progress.level || 0);
-      this.showLevel(lvl);
+      this.showLevel(Math.max(0, Math.min(7, this.progress.level || 0)));
+      if (this.progress.level > 0) $('#mute-btn').classList.add('visible');
     };
 
-    document.getElementById('restart-btn-return').onclick = () => {
+    $('#restart-btn-return').onclick = () => {
       screen.classList.remove('visible');
-      try { localStorage.removeItem('jilebi_progress'); } catch(e) {}
-      this.progress = {};
-      this.showLevel(0);
+      this.restart(true);
     };
   },
 
   showLevel(num) {
-    // Hide all levels
-    document.querySelectorAll('.level').forEach(el => {
-      el.classList.remove('active');
-      el.style.display = 'none';
+    $$('.level').forEach(level => {
+      level.classList.remove('active');
+      level.style.display = 'none';
     });
 
     this.current = num;
+    document.body.dataset.level = String(num);
     this.save();
 
-    const level = document.getElementById(`level-${num}`);
+    const level = $(`#level-${num}`);
     if (!level) return;
 
     level.style.display = 'flex';
     requestAnimationFrame(() => level.classList.add('active'));
+    this.updateChrome(num);
 
-    // Update chapter indicator
-    const indicator = document.getElementById('chapter-indicator');
-    const chapterNum = document.getElementById('chapter-num');
-    if (num > 0) {
-      indicator.classList.add('visible');
-      chapterNum.textContent = num;
-    } else {
-      indicator.classList.remove('visible');
-    }
-
-    // Initialize level
-    const inits = {
-      0: () => Level0.init(),
-      1: () => Level1.init(),
-      2: () => Level2.init(),
-      3: () => Level3.init(),
-      4: () => Level4.init(),
-      5: () => Level5.init(),
-      6: () => Level6.init(),
-      7: () => Level7.init()
-    };
-
-    if (inits[num]) setTimeout(inits[num], 300);
+    const inits = [Level0, Level1, Level2, Level3, Level4, Level5, Level6, Level7];
+    setTimeout(() => inits[num] && inits[num].init(), 250);
   },
 
-  async transition(toLevel) {
-    AudioManager.playChime();
+  updateChrome(num) {
+    const indicator = $('#chapter-indicator');
+    $('#chapter-num').textContent = String(num);
+    $('#chapter-label').textContent = this.labels[num] || 'World';
+    indicator.classList.toggle('visible', num > 0);
+  },
+
+  async transition(toLevel, options = {}) {
     Utils.vibrate([20]);
+    AudioManager.chime(options.chime || 'soft');
 
-    const overlay = document.getElementById('transition-overlay');
+    const overlay = $('#transition-overlay');
+    const copy = this.bridges[toLevel] || ['Level unlocked', this.labels[toLevel] || '', ''];
+    $('#bridge-kicker').textContent = copy[0];
+    $('#bridge-title').textContent = options.title || copy[1];
+    $('#bridge-sub').textContent = options.sub || copy[2];
+
     overlay.classList.add('active');
-
-    await Utils.wait(500);
+    await Utils.wait(options.long ? 1500 : 760);
     this.showLevel(toLevel);
-    await Utils.wait(300);
+    await Utils.wait(420);
     overlay.classList.remove('active');
   },
 
-  restart() {
-    try { localStorage.removeItem('jilebi_progress'); } catch(e) {}
+  restart(skipTransition = false) {
+    try {
+      localStorage.removeItem(this.key);
+    } catch (err) {}
     this.progress = {};
-    this.transition(0);
+    GameEngine.completed.clear();
+    if (skipTransition) {
+      this.showLevel(0);
+    } else {
+      this.transition(0, { title: 'The Gate', sub: 'Again, from the first light.' });
+    }
   }
 };
 
-/* ─── LEVEL 0 — THE GATE ─────────────────────────────── */
 const Level0 = {
+  token: null,
+  moonTaps: 0,
+
   init() {
-    // Animate moon, candle already running via CSS
-    this.runTextSequence();
+    if (this.token) this.token.cancelled = true;
+    this.token = { cancelled: false };
+    $$('.typewriter-line').forEach(line => {
+      line.textContent = '';
+      line.style.opacity = '0';
+    });
+    $('#l0-cta').style.opacity = '0';
+    $('#date-sigil').classList.remove('visible');
+    $('#l0-moon').onclick = () => this.tapMoon();
+    this.runTextSequence(this.token);
   },
 
-  async runTextSequence() {
-    await Utils.wait(800);
-
+  async runTextSequence(token) {
+    await Utils.wait(520);
     const lines = [
-      { id: 'l0-line1', text: 'Some people enter quietly...', speed: 55 },
-      { id: 'l0-line2', text: '...but stay forever in the heart.', speed: 55, delay: 1000 },
-      { id: 'l0-line3', text: 'Happy Birthday, Jilebi 🌸', speed: 65, delay: 2200 },
-      { id: 'l0-line4', text: 'This journey was made only for you.', speed: 45, delay: 3800 },
+      ['#l0-line1', 'This is not a birthday page.', 52],
+      ['#l0-line2', 'It is a little world built for one person.', 45],
+      ['#l0-line3', 'Jilebi', 72],
+      ['#l0-line4', 'Unlocking the quiet places she dreams about.', 38]
     ];
 
-    for (const line of lines) {
-      await Utils.wait(line.delay || 0);
-      const el = document.getElementById(line.id);
-      if (!el) continue;
-      await new Promise(resolve => Utils.typewriter(el, line.text, line.speed, resolve));
+    for (const [selector, text, speed] of lines) {
+      await Utils.typewriter($(selector), text, speed, token);
+      await Utils.wait(360);
+      if (token.cancelled || LevelManager.current !== 0) return;
     }
 
-    await Utils.wait(600);
-
-    // Show CTA
-    const cta = document.getElementById('l0-cta');
-    cta.style.opacity = '0';
-    await Utils.fadeIn(cta, 800);
-
-    cta.addEventListener('click', () => this.onBegin(), { once: true });
+    $('#l0-cta').style.opacity = '1';
+    $('#l0-cta').onclick = () => this.begin();
   },
 
-  async onBegin() {
-    Utils.vibrate([30]);
-    AudioManager.playAmbient();
+  tapMoon() {
+    this.moonTaps += 1;
+    Utils.vibrate([12]);
+    if (this.moonTaps === 2) {
+      $('#date-sigil').classList.add('visible');
+      AudioManager.chime('soft');
+    }
+    if (this.moonTaps >= 5) {
+      EasterEgg.showSecret();
+      this.moonTaps = 0;
+    }
+  },
 
-    const muteBtn = document.getElementById('mute-btn');
-    muteBtn.classList.add('visible');
-
-    await Utils.wait(200);
+  begin() {
+    if (this.token) this.token.cancelled = true;
+    $('#mute-btn').classList.add('visible');
+    AudioManager.start();
     LevelManager.transition(1);
   }
 };
 
-/* ─── LEVEL 1 — STAR GATE ────────────────────────────── */
 const Level1 = {
-  stars: [],
   caught: 0,
   target: 10,
   active: false,
-  animFrame: null,
+  timers: [],
 
   init() {
+    this.cleanup();
     this.caught = 0;
     this.active = true;
+    $('#l1-golden-light').classList.remove('visible');
+    $('#l1-unlock-msg').classList.remove('visible');
+    ['#gate-door-left', '#gate-door-right'].forEach(selector => {
+      const door = $(selector);
+      if (door) door.style.animation = '';
+    });
     this.updateCounter();
-    this.spawnStars();
+    this.spawnLoop();
+  },
+
+  cleanup() {
+    this.active = false;
+    this.timers.forEach(timer => clearTimeout(timer));
+    this.timers = [];
+    const container = $('#l1-stars-container');
+    if (container) container.innerHTML = '';
   },
 
   updateCounter() {
-    const el = document.getElementById('l1-counter');
-    if (el) el.textContent = `✦ ${this.caught} / ${this.target}`;
+    $('#l1-counter').textContent = `\u2726 ${this.caught} / ${this.target}`;
   },
 
-  spawnStars() {
-    const container = document.getElementById('l1-stars-container');
+  spawnLoop() {
+    const container = $('#l1-stars-container');
     if (!container) return;
-    container.innerHTML = '';
-    this.stars = [];
 
-    for (let i = 0; i < 18; i++) {
-      setTimeout(() => {
-        if (!this.active) return;
-        this.spawnStar(container, i);
-      }, i * 300);
+    const spawn = () => {
+      if (!this.active) return;
+      if (this.caught < this.target) {
+        this.spawnStar(container);
+        this.timers.push(setTimeout(spawn, Utils.rand(320, 680)));
+      }
+    };
+
+    for (let i = 0; i < 7; i += 1) {
+      this.timers.push(setTimeout(spawn, i * 170));
     }
   },
 
-  spawnStar(container, idx) {
-    const star = document.createElement('div');
+  spawnStar(container) {
+    const star = document.createElement('button');
+    star.type = 'button';
     star.className = 'game-star';
-    star.innerHTML = '✦';
-    star.style.color = `hsl(${40 + Math.random() * 20}, 80%, ${65 + Math.random() * 15}%)`;
+    star.textContent = '\u2726';
+    star.style.left = `${Utils.rand(8, 84)}vw`;
+    star.style.top = `${Utils.rand(16, 75)}vh`;
+    star.style.color = `hsl(${Utils.rand(36, 52)}, 80%, ${Utils.rand(64, 78)}%)`;
+    star.setAttribute('aria-label', 'Catch star');
 
-    const startX = Utils.rand(5, 85);
-    const startY = Utils.rand(15, 75);
-    star.style.left = startX + 'vw';
-    star.style.top = startY + 'vh';
+    const baseX = parseFloat(star.style.left);
+    const baseY = parseFloat(star.style.top);
+    const phase = Utils.rand(0, Math.PI * 2);
+    const speed = Utils.rand(0.5, 1.1);
+    const start = performance.now();
+
+    const float = now => {
+      if (!star.isConnected || star.classList.contains('caught')) return;
+      const t = (now - start) * 0.001 * speed;
+      star.style.left = `${baseX + Math.sin(t + phase) * 4.5}vw`;
+      star.style.top = `${baseY + Math.cos(t * 0.8 + phase) * 3.2}vh`;
+      requestAnimationFrame(float);
+    };
+
+    star.onclick = event => {
+      event.stopPropagation();
+      this.catchStar(star);
+    };
 
     container.appendChild(star);
+    requestAnimationFrame(float);
 
-    // Organic float motion
-    const speed = Utils.rand(0.4, 1.2);
-    const phaseX = Utils.rand(0, Math.PI * 2);
-    const phaseY = Utils.rand(0, Math.PI * 2);
-    const ampX = Utils.rand(3, 8);
-    const ampY = Utils.rand(2, 6);
-    const baseX = startX;
-    const baseY = startY;
-    let startTime = Date.now();
-
-    const animate = () => {
-      if (!star.isConnected || star.classList.contains('caught')) return;
-      const t = (Date.now() - startTime) * 0.001 * speed;
-      const x = baseX + ampX * Math.sin(t + phaseX);
-      const y = baseY + ampY * Math.cos(t * 0.7 + phaseY);
-      star.style.left = x + 'vw';
-      star.style.top = y + 'vh';
-      requestAnimationFrame(animate);
-    };
-    requestAnimationFrame(animate);
-
-    star.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.catchStar(star);
-    });
-    star.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      this.catchStar(star);
-    }, { passive: false });
-
-    this.stars.push(star);
+    this.timers.push(setTimeout(() => {
+      if (star.isConnected && !star.classList.contains('caught')) star.remove();
+    }, 5200));
   },
 
   catchStar(star) {
     if (!this.active || star.classList.contains('caught')) return;
     star.classList.add('caught');
-    Utils.vibrate([25]);
-    AudioManager.playStarCatch();
-
-    // Sparkle effect
+    Utils.vibrate([18]);
+    AudioManager.tick();
     this.sparkle(star);
-
-    this.caught++;
+    this.caught += 1;
     this.updateCounter();
-
-    setTimeout(() => {
-      if (star.isConnected) star.remove();
-    }, 400);
+    setTimeout(() => star.remove(), 360);
 
     if (this.caught >= this.target) {
-      this.active = false;
-      setTimeout(() => this.unlock(), 500);
+      this.unlock();
     }
   },
 
@@ -531,1082 +536,828 @@ const Level1 = {
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
 
-    for (let i = 0; i < 8; i++) {
-      const p = document.createElement('div');
-      p.style.cssText = `
-        position:fixed; left:${cx}px; top:${cy}px;
-        width:6px; height:6px; border-radius:50%;
-        background:var(--gold); pointer-events:none;
-        z-index:100; transform:translate(-50%,-50%);
-      `;
-      document.body.appendChild(p);
-
-      const angle = (i / 8) * Math.PI * 2;
-      const dist = Utils.rand(30, 60);
-      const dx = Math.cos(angle) * dist;
-      const dy = Math.sin(angle) * dist;
-
-      p.animate([
-        { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
-        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0)`, opacity: 0 }
-      ], { duration: 500, easing: 'cubic-bezier(0.16,1,0.3,1)' }).onfinish = () => p.remove();
+    for (let i = 0; i < 8; i += 1) {
+      const dot = document.createElement('span');
+      dot.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;width:5px;height:5px;border-radius:50%;background:var(--gold);z-index:9300;pointer-events:none;`;
+      document.body.appendChild(dot);
+      const angle = Math.PI * 2 * (i / 8);
+      const distance = Utils.rand(26, 58);
+      dot.animate([
+        { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+        { transform: `translate(calc(-50% + ${Math.cos(angle) * distance}px), calc(-50% + ${Math.sin(angle) * distance}px)) scale(0)`, opacity: 0 }
+      ], { duration: 520, easing: 'cubic-bezier(.16,1,.3,1)' }).onfinish = () => dot.remove();
     }
   },
 
   async unlock() {
-    // Open gate
-    const gateL = document.getElementById('gate-door-left');
-    const gateR = document.getElementById('gate-door-right');
-    if (gateL) gateL.style.animation = 'gate-open-left 1.5s cubic-bezier(0.4,0,0.2,1) forwards';
-    if (gateR) gateR.style.animation = 'gate-open-right 1.5s cubic-bezier(0.4,0,0.2,1) forwards';
-
-    // Golden light
-    const light = document.getElementById('l1-golden-light');
-    if (light) light.classList.add('visible');
-
-    await Utils.wait(1000);
-
-    // Show unlock message
-    const msg = document.getElementById('l1-unlock-msg');
-    if (msg) msg.classList.add('visible');
-
-    await Utils.wait(3200);
+    if (!this.active) return;
+    this.active = false;
+    this.timers.forEach(timer => clearTimeout(timer));
+    AudioManager.chime('unlock');
+    $('#gate-door-left').style.animation = 'gate-open-left 1500ms var(--ease) forwards';
+    $('#gate-door-right').style.animation = 'gate-open-right 1500ms var(--ease) forwards';
+    $('#l1-golden-light').classList.add('visible');
+    await Utils.wait(900);
+    $('#l1-unlock-msg').classList.add('visible');
+    await Utils.wait(2450);
     LevelManager.transition(2);
   }
 };
 
-/* ─── LEVEL 2 — VIBE CONSTELLATION ──────────────────── */
 const Level2 = {
   tapped: new Set(),
-  total: 10,
-
+  unlocking: false,
   vibes: [
     {
-      label: 'Introvert', emoji: '🌙',
-      quote: 'She finds her loudest peace in the quietest rooms.',
-      img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80&auto=format',
-      color: 'rgba(155,109,255,0.3)'
+      label: 'Introvert Peace',
+      symbol: '\u263e',
+      quote: 'She is not distant. She is careful with where her energy goes.',
+      img: IMG.room,
+      color: 'rgba(143, 216, 210, 0.20)'
     },
     {
-      label: 'Deep Thinker', emoji: '📖',
-      quote: 'She doesn\'t just look at things. She feels their weight.',
-      img: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&q=80&auto=format',
-      color: 'rgba(201,123,176,0.3)'
+      label: 'Deep Thinker',
+      symbol: '\u2234',
+      quote: 'She hears meanings under the sentence, and feelings under the joke.',
+      img: IMG.night,
+      color: 'rgba(215, 183, 106, 0.22)'
     },
     {
-      label: 'Soft Heart with Walls', emoji: '🏰',
-      quote: 'Hard outside, because the inside is too precious to risk.',
-      img: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80&auto=format',
-      color: 'rgba(232,201,125,0.25)'
+      label: 'Soft Heart',
+      symbol: '\u25cc',
+      quote: 'Soft does not mean easy to break. Sometimes it means still kind after everything.',
+      img: IMG.tea,
+      color: 'rgba(217, 139, 168, 0.24)'
     },
     {
-      label: 'Late Night Energy', emoji: '✨',
-      quote: '3 AM thoughts hit different. She knows.',
-      img: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=600&q=80&auto=format',
-      color: 'rgba(155,109,255,0.25)'
+      label: 'Quiet Strength',
+      symbol: '\u25b3',
+      quote: 'She carries things quietly, then still shows up with warmth.',
+      img: IMG.mountains,
+      color: 'rgba(143, 216, 210, 0.18)'
     },
     {
-      label: 'Emotional Chaos', emoji: '🌧️',
-      quote: 'Feels everything. Hides half. Shares the rest in silences.',
-      img: 'https://images.unsplash.com/photo-1439853949212-36589f9f7458?w=600&q=80&auto=format',
-      color: 'rgba(100,150,255,0.25)'
+      label: 'Late Night Energy',
+      symbol: '\u2726',
+      quote: 'Reels, thoughts, songs, sudden honesty. The night knows her real language.',
+      img: IMG.sky,
+      color: 'rgba(215, 183, 106, 0.18)'
     },
     {
-      label: 'Comfort Person', emoji: '☕',
-      quote: 'Some people are home. She\'s that for others.',
-      img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80&auto=format',
-      color: 'rgba(232,180,120,0.25)'
-    },
-    {
-      label: 'Meaningful Soul', emoji: '🌸',
-      quote: 'She collects feelings, not things.',
-      img: 'https://images.unsplash.com/photo-1545843809-96a2a3f42cc3?w=600&q=80&auto=format',
-      color: 'rgba(242,167,195,0.25)'
-    },
-    {
-      label: 'Mountain Heart', emoji: '🏔️',
-      quote: 'She was born to breathe thin air and wide skies.',
-      img: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&q=80&auto=format',
-      color: 'rgba(100,200,180,0.2)'
-    },
-    {
-      label: 'Quiet but Strong', emoji: '🌊',
-      quote: 'Silence is not emptiness. It\'s depth.',
-      img: 'https://images.unsplash.com/photo-1439853949212-36589f9f7458?w=600&q=80&auto=format',
-      color: 'rgba(155,109,255,0.2)'
-    },
-    {
-      label: 'Peace Seeker', emoji: '🕯️',
-      quote: 'She needs the kind of peace that doesn\'t need explaining.',
-      img: 'https://images.unsplash.com/photo-1545843809-96a2a3f42cc3?w=600&q=80&auto=format',
-      color: 'rgba(232,201,125,0.2)'
+      label: 'Soft Chaos',
+      symbol: '\u223f',
+      quote: 'Teasing, blushing talks, overthinking, laughing. A whole weather system, somehow beautiful.',
+      img: IMG.rain,
+      color: 'rgba(242, 166, 90, 0.18)'
     }
   ],
-
-  ambientQuotes: [
-    'Pahadon wali peace 🏔️',
-    'Some souls feel like home.',
-    'Quiet hearts carry deep oceans.',
-    'Late night talks hit different.',
-    'Soft hearts are not weak. They\'re rare.'
+  quotes: [
+    'quiet hearts, full skies',
+    'pahad wali peace',
+    'late-night thoughts',
+    'soft chaos, real comfort'
   ],
 
   init() {
     this.tapped.clear();
-    this.renderOrbs();
-    this.renderAmbientQuotes();
+    this.unlocking = false;
+    this.render();
     this.updateProgress();
   },
 
-  renderOrbs() {
-    const container = document.getElementById('l2-orb-container');
-    if (!container) return;
+  render() {
+    const container = $('#l2-orb-container');
     container.innerHTML = '';
-
-    // Place orbs in a organic scattered layout
     const positions = [
-      [15, 22], [65, 18], [38, 32], [80, 38], [10, 52],
-      [55, 55], [28, 68], [72, 65], [42, 78], [85, 22]
+      [16, 28],
+      [62, 21],
+      [36, 45],
+      [76, 52],
+      [20, 68],
+      [56, 73]
     ];
 
-    this.vibes.forEach((vibe, i) => {
-      const orb = document.createElement('div');
+    this.vibes.forEach((vibe, index) => {
+      const orb = document.createElement('button');
+      orb.type = 'button';
       orb.className = 'vibe-orb';
-      orb.dataset.idx = i;
+      orb.style.left = `${positions[index][0]}%`;
+      orb.style.top = `${positions[index][1]}%`;
       orb.style.setProperty('--orb-color', vibe.color);
-      orb.style.setProperty('--float-dur', `${Utils.rand(5, 9)}s`);
-      orb.style.setProperty('--float-delay', `-${Utils.rand(0, 5)}s`);
-      orb.style.left = `${positions[i][0]}%`;
-      orb.style.top = `${positions[i][1]}%`;
-
-      orb.innerHTML = `
-        <span class="vibe-orb-emoji">${vibe.emoji}</span>
-        <span class="vibe-orb-label">${vibe.label}</span>
-      `;
-
-      orb.addEventListener('click', () => this.tapOrb(i, orb, vibe));
-      orb.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        this.tapOrb(i, orb, vibe);
-      }, { passive: false });
-
+      orb.style.setProperty('--float-dur', `${Utils.rand(6, 9)}s`);
+      orb.style.setProperty('--float-delay', `-${Utils.rand(0, 4)}s`);
+      orb.innerHTML = `<span class="vibe-orb-symbol">${vibe.symbol}</span><span class="vibe-orb-label">${vibe.label}</span>`;
+      orb.onclick = () => this.tap(index, orb, vibe);
       container.appendChild(orb);
     });
-  },
 
-  renderAmbientQuotes() {
-    const container = document.getElementById('l2-orb-container');
-    this.ambientQuotes.forEach((q, i) => {
-      const el = document.createElement('div');
+    this.quotes.forEach(quote => {
+      const el = document.createElement('span');
       el.className = 'ambient-quote';
-      el.textContent = q;
-      el.style.left = `${Utils.rand(5, 80)}%`;
-      el.style.top = `${Utils.rand(10, 85)}%`;
-      el.style.setProperty('--float-dur', `${Utils.rand(6, 12)}s`);
-      el.style.setProperty('--float-delay', `-${Utils.rand(0, 8)}s`);
+      el.textContent = quote;
+      el.style.left = `${Utils.rand(7, 75)}%`;
+      el.style.top = `${Utils.rand(18, 80)}%`;
+      el.style.setProperty('--float-dur', `${Utils.rand(7, 12)}s`);
+      el.style.setProperty('--float-delay', `-${Utils.rand(0, 7)}s`);
       container.appendChild(el);
     });
   },
 
-  tapOrb(i, orb, vibe) {
-    if (this.tapped.has(i)) {
-      this.showVibeCard(vibe);
-      return;
+  tap(index, orb, vibe) {
+    if (!this.tapped.has(index)) {
+      this.tapped.add(index);
+      orb.classList.add('tapped');
+      Utils.vibrate([16]);
+      AudioManager.chime('soft');
+      this.updateProgress();
     }
 
-    this.tapped.add(i);
-    orb.classList.add('tapped');
-    Utils.vibrate([20]);
-    AudioManager.playWhoosh();
-    this.updateProgress();
-    this.showVibeCard(vibe);
+    this.showCard(vibe);
 
-    if (this.tapped.size >= this.total) {
-      setTimeout(() => this.unlock(), 1500);
+    if (this.tapped.size >= this.vibes.length && !this.unlocking) {
+      this.unlocking = true;
+      setTimeout(() => this.unlock(), 1450);
     }
   },
 
-  showVibeCard(vibe) {
-    const overlay = document.getElementById('vibe-card-overlay');
-    const img = document.getElementById('vibe-card-img');
-    const label = document.getElementById('vibe-card-label');
-    const quote = document.getElementById('vibe-card-quote');
-
-    img.src = vibe.img;
-    img.alt = vibe.label;
-    label.textContent = `${vibe.emoji} ${vibe.label}`;
-    quote.textContent = `"${vibe.quote}"`;
-
+  showCard(vibe) {
+    const overlay = $('#vibe-card-overlay');
+    Utils.setImage($('#vibe-card-img'), vibe.img, vibe.label);
+    $('#vibe-card-label').textContent = vibe.label;
+    $('#vibe-card-quote').textContent = vibe.quote;
     overlay.classList.add('visible');
-
-    const close = document.getElementById('vibe-card-close');
-    close.onclick = () => overlay.classList.remove('visible');
-    overlay.onclick = (e) => { if (e.target === overlay) overlay.classList.remove('visible'); };
+    $('#vibe-card-close').onclick = () => overlay.classList.remove('visible');
+    overlay.onclick = event => {
+      if (event.target === overlay) overlay.classList.remove('visible');
+    };
   },
 
   updateProgress() {
-    const el = document.getElementById('l2-progress');
-    if (el) el.textContent = `${this.tapped.size} / ${this.total} unlocked`;
-    const header = document.querySelector('#level-2 .l2-header p');
-    if (header) header.textContent = `TAP EACH ORB TO UNLOCK · ${this.tapped.size} / ${this.total}`;
+    $('#l2-progress').textContent = `${this.tapped.size} / ${this.vibes.length} fragments unlocked`;
+    $('#l2-header-sub').textContent = this.tapped.size
+      ? 'Each one is a small proof that she has always been more than one mood.'
+      : 'Unlock the fragments people miss when they only look quickly.';
   },
 
   async unlock() {
-    document.getElementById('vibe-card-overlay').classList.remove('visible');
-    await Utils.wait(500);
+    $('#vibe-card-overlay').classList.remove('visible');
+    await Utils.wait(420);
     LevelManager.transition(3);
   }
 };
 
-/* ─── LEVEL 3 — DREAM PATH ───────────────────────────── */
 const Level3 = {
   unlocked: new Set(),
-  total: 5,
-
+  unlocking: false,
   destinations: [
     {
       name: 'Kedarnath',
-      emoji: '⛰️',
-      hint: 'The mountain that has been calling',
-      img: 'https://images.unsplash.com/photo-1571400493526-8d33f0a31f3d?w=800&q=80&auto=format',
-      text: 'For the mountain that has been calling your soul since before you knew why. One day you\'ll stand there. The cold will feel like coming home.',
+      hint: 'the mountain that keeps calling',
+      img: IMG.kedarnath,
+      text: 'For the dream that feels older than a plan. One day, when Kedarnath happens, the cold air will not feel harsh. It will feel like an answer.'
     },
     {
       name: 'Teerth Yatra',
-      emoji: '🪔',
-      hint: 'The journey that feeds the soul',
-      img: 'https://images.unsplash.com/photo-1545843809-96a2a3f42cc3?w=800&q=80&auto=format',
-      text: 'For the journey that feeds something deeper than hunger. The ghats, the diyas, the sound of water carrying every prayer you never said aloud.',
+      hint: 'a road that feeds the soul',
+      img: IMG.flags,
+      text: 'For the prayers she may not say loudly. For the ghats, bells, flags, water, and that quiet feeling of being held by something bigger.'
     },
     {
       name: 'Pahad ka Ghar',
-      emoji: '🏠',
-      hint: 'A home where silence is the loudest sound',
-      img: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80&auto=format',
-      text: 'A home where silence is the loudest sound. Where mornings smell like pine. Where the mountains are your walls and the sky is your ceiling.',
+      hint: 'a home where silence is full',
+      img: IMG.house,
+      text: 'A window facing the hills. Tea cooling slowly. No pressure to explain anything. Just a morning that lets her breathe completely.'
     },
     {
       name: 'Travelling',
-      emoji: '🧭',
-      hint: 'Walking toward everything',
-      img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80&auto=format',
-      text: 'Not running away from something. Walking toward everything. Every road that turns into mist is an invitation — and she always accepts.',
+      hint: 'roads that become stories',
+      img: IMG.road,
+      text: 'Not escape. Expansion. The kind of travelling where every misty turn reminds her that life can still surprise her gently.'
     },
     {
       name: 'Peaceful Life',
-      emoji: '🌅',
-      hint: 'Not a place. A feeling.',
-      img: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800&q=80&auto=format',
-      text: 'This is the destination. Not a place. A feeling she was always meant to live in. Still. Warm. Completely, finally hers.',
+      hint: 'not a place, a feeling',
+      img: IMG.tea,
+      text: 'This is the real destination: calm mornings, safe conversations, fewer heavy nights, and a life that finally stops asking her to rush.'
     }
   ],
 
   init() {
     this.unlocked.clear();
+    this.unlocking = false;
     this.render();
   },
 
   render() {
-    const container = document.getElementById('l3-destinations');
-    if (!container) return;
+    const container = $('#l3-destinations');
     container.innerHTML = '';
 
-    this.destinations.forEach((dest, i) => {
-      const el = document.createElement('div');
-      el.className = 'destination-lantern';
-      el.dataset.idx = i;
-
-      el.innerHTML = `
-        <div class="dest-lantern-icon" data-idx="${i}">${dest.emoji}</div>
-        <div class="dest-info">
-          <div class="dest-name">${dest.name}</div>
-          <div class="dest-hint">${dest.hint}</div>
-        </div>
-        <div class="dest-status">🔒</div>
+    this.destinations.forEach((dest, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'destination-lantern';
+      button.innerHTML = `
+        <span class="dest-index">${String(index + 1).padStart(2, '0')}</span>
+        <span class="dest-info">
+          <span class="dest-name">${dest.name}</span>
+          <span class="dest-hint">${dest.hint}</span>
+        </span>
+        <span class="dest-status">locked</span>
       `;
+      button.style.opacity = '0';
+      button.style.transform = 'translateX(-0.75rem)';
+      button.onclick = () => this.tap(index, button, dest);
+      container.appendChild(button);
 
-      el.addEventListener('click', () => this.tapDest(i, el, dest));
-      el.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        this.tapDest(i, el, dest);
-      }, { passive: false });
-
-      container.appendChild(el);
-
-      // Animate in with stagger
-      el.style.opacity = '0';
-      el.style.transform = 'translateX(-20px)';
       setTimeout(() => {
-        el.style.transition = 'all 0.5s cubic-bezier(0.16,1,0.3,1)';
-        el.style.opacity = '1';
-        el.style.transform = 'translateX(0)';
-      }, i * 120 + 300);
+        button.style.transition = 'opacity 420ms var(--ease), transform 420ms var(--spring)';
+        button.style.opacity = '1';
+        button.style.transform = 'translateX(0)';
+      }, 180 + index * 110);
     });
   },
 
-  tapDest(i, el, dest) {
-    Utils.vibrate([25]);
-    AudioManager.playWhoosh();
+  tap(index, button, dest) {
+    Utils.vibrate([18]);
+    AudioManager.chime('soft');
 
-    if (!this.unlocked.has(i)) {
-      this.unlocked.add(i);
-      el.classList.add('unlocked');
-      const status = el.querySelector('.dest-status');
-      if (status) status.textContent = '✦';
-      const icon = el.querySelector('.dest-lantern-icon');
-      if (icon) icon.classList.remove('locked');
+    if (!this.unlocked.has(index)) {
+      this.unlocked.add(index);
+      button.classList.add('unlocked');
+      $('.dest-status', button).textContent = 'open';
     }
 
-    this.showDestCard(dest);
+    this.showCard(dest);
 
-    if (this.unlocked.size >= this.total) {
+    if (this.unlocked.size >= this.destinations.length && !this.unlocking) {
+      this.unlocking = true;
       setTimeout(() => this.unlock(), 1500);
     }
   },
 
-  showDestCard(dest) {
-    const overlay = document.getElementById('dest-card-overlay');
-    const img = document.getElementById('dest-card-img');
-    const title = document.getElementById('dest-card-title');
-    const text = document.getElementById('dest-card-text');
-
-    img.src = dest.img;
-    img.alt = dest.name;
-    title.textContent = `${dest.emoji} ${dest.name}`;
-    text.textContent = dest.text;
-
+  showCard(dest) {
+    const overlay = $('#dest-card-overlay');
+    Utils.setImage($('#dest-card-img'), dest.img, dest.name);
+    $('#dest-card-title').textContent = dest.name;
+    $('#dest-card-text').textContent = dest.text;
     overlay.classList.add('visible');
-
-    const close = document.getElementById('dest-card-close');
-    close.onclick = () => overlay.classList.remove('visible');
-    overlay.onclick = (e) => { if (e.target === overlay) overlay.classList.remove('visible'); };
+    $('#dest-card-close').onclick = () => overlay.classList.remove('visible');
+    overlay.onclick = event => {
+      if (event.target === overlay) overlay.classList.remove('visible');
+    };
   },
 
   async unlock() {
-    document.getElementById('dest-card-overlay').classList.remove('visible');
-
-    // Flash all items gold
-    document.querySelectorAll('.destination-lantern').forEach(el => {
-      el.style.borderColor = 'rgba(232,201,125,0.6)';
-      el.style.background = 'rgba(232,201,125,0.08)';
+    $('#dest-card-overlay').classList.remove('visible');
+    await Utils.wait(500);
+    await SecretMoments.pocketSunrise();
+    await LevelManager.transition(4, {
+      title: 'It does not end at the map.',
+      sub: 'It turns inward, into memories.',
+      long: true
     });
-
-    await Utils.wait(800);
-
-    // Transition message
-    const overlay = document.getElementById('transition-overlay');
-    overlay.style.display = 'flex';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
-    overlay.style.flexDirection = 'column';
-    overlay.style.gap = '12px';
-    overlay.classList.add('active');
-
-    overlay.innerHTML = `
-      <div style="font-family:var(--font-display);font-size:clamp(1.4rem,4vw,2rem);color:var(--cream);text-align:center;padding:0 24px;font-weight:300;opacity:0;transition:opacity 0.8s;">
-        She carries her whole world inside her.
-      </div>
-    `;
-
-    await Utils.wait(300);
-    const msg = overlay.querySelector('div');
-    if (msg) msg.style.opacity = '1';
-
-    await Utils.wait(2500);
-    overlay.innerHTML = '';
-    overlay.style.display = '';
-    overlay.style.alignItems = '';
-    overlay.style.justifyContent = '';
-    overlay.style.flexDirection = '';
-    overlay.style.gap = '';
-
-    LevelManager.showLevel(4);
-    overlay.classList.remove('active');
   }
 };
 
-/* ─── LEVEL 4 — MEMORY CONSTELLATION ────────────────── */
 const Level4 = {
-  canvas: null,
-  ctx: null,
-  stars: [],
+  target: 12,
   tapped: new Set(),
   lines: [],
-  target: 15,
-  animFrame: null,
+  stars: [],
   activePopup: null,
-
+  nameVisible: false,
   notes: [
-    'The way you go quiet and the world somehow understands.',
-    'Your random reels at midnight that somehow hit perfectly.',
-    'The emoji you use when words feel too small.',
-    'Teaching Hindi like it\'s the most natural thing.',
-    'That 3 AM comfort energy — real and rare.',
-    'The way your silences say more than most people\'s words.',
-    'Your soft chaos — adorable and deep at the same time.',
-    'The mountains you carry in your chest all year long.',
-    'Your emotional safety — the kind people search years for.',
-    'That calm you radiate when everything else is loud.',
-    'The tea, the window, the rain — your whole aesthetic.',
-    'How you feel things fully, even when you don\'t say them.',
-    'Late night wandering thoughts you never share but treasure.',
-    'The way certain songs just ARE you.',
-    'Your kindness that asks for nothing in return.',
-    'The version of peace you\'re still building for yourself.',
-    'Small rituals that mean everything to you and nothing to others.',
-    'The dreams you hold quietly — Kedarnath, the mountains, home.',
-    'The part of you that knows someday, it will all make sense.',
-    'The rare energy that makes people feel safe near you.'
+    'Random reels that somehow became their own little language.',
+    'Late-night chats when the world felt smaller and safer.',
+    'Long calls where time quietly forgot to behave.',
+    'Songs shared like small pieces of the heart.',
+    'Teasing that made the connection feel easy and alive.',
+    'Language teaching, because even words became a memory.',
+    'Sharing little parts of life without forcing anything.',
+    'Those blushing talks that said more than they admitted.',
+    'Support that arrived softly, not loudly.',
+    'Dreams spoken like they were fragile and important.',
+    'Comfort that felt natural, like breathing after a long day.',
+    'Understanding each other in a way that made the memories real.'
+  ],
+  positions: [
+    [0.16, 0.28], [0.28, 0.43], [0.42, 0.32], [0.55, 0.46],
+    [0.70, 0.34], [0.82, 0.52], [0.67, 0.68], [0.51, 0.60],
+    [0.36, 0.72], [0.24, 0.62], [0.47, 0.80], [0.73, 0.78]
   ],
 
   init() {
-    this.canvas = document.getElementById('constellation-canvas');
-    if (!this.canvas) return;
-
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
+    this.canvas = $('#constellation-canvas');
     this.ctx = this.canvas.getContext('2d');
-
     this.tapped.clear();
     this.lines = [];
-    this.stars = [];
+    this.nameVisible = false;
     this.activePopup = null;
-
+    $('#l4-final-msg').classList.remove('visible');
+    this.resize();
     this.createStars();
+    this.updateProgress();
+    this.canvas.onclick = event => this.onTap(event.clientX, event.clientY);
+    this.canvas.ontouchstart = event => {
+      event.preventDefault();
+      const touch = event.touches[0];
+      if (touch) this.onTap(touch.clientX, touch.clientY);
+    };
+    window.onresize = () => {
+      if (LevelManager.current === 4) {
+        this.resize();
+        this.createStars();
+      }
+    };
+    cancelAnimationFrame(this.frame);
     this.animate();
+  },
 
-    this.canvas.addEventListener('click', (e) => this.onCanvasClick(e));
-    this.canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      this.onCanvasClick(e.touches[0]);
-    }, { passive: false });
-
-    window.addEventListener('resize', () => {
-      this.canvas.width = window.innerWidth;
-      this.canvas.height = window.innerHeight;
-    });
+  resize() {
+    const dpr = window.devicePixelRatio || 1;
+    this.canvas.width = Math.floor(window.innerWidth * dpr);
+    this.canvas.height = Math.floor(window.innerHeight * dpr);
+    this.canvas.style.width = `${window.innerWidth}px`;
+    this.canvas.style.height = `${window.innerHeight}px`;
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   },
 
   createStars() {
-    const w = this.canvas.width;
-    const h = this.canvas.height;
-    const topPad = 100;
-    const bottomPad = 80;
+    const top = window.innerHeight < 700 ? 90 : 120;
+    const bottom = 90;
+    const usableH = Math.max(260, window.innerHeight - top - bottom);
 
-    for (let i = 0; i < 20; i++) {
-      this.stars.push({
-        x: Utils.rand(w * 0.05, w * 0.95),
-        y: Utils.rand(topPad, h - bottomPad),
-        r: Utils.rand(3, 7),
-        brightness: Utils.rand(0.4, 1),
-        phase: Utils.rand(0, Math.PI * 2),
-        speed: Utils.rand(0.5, 1.5),
-        note: this.notes[i % this.notes.length],
-        tapped: false,
-        glowColor: `hsl(${Utils.rand(35, 55)}, 80%, 70%)`
-      });
-    }
+    this.stars = this.positions.map(([px, py], index) => ({
+      x: window.innerWidth * px,
+      y: top + usableH * py,
+      r: Utils.rand(4, 7),
+      phase: Utils.rand(0, Math.PI * 2),
+      note: this.notes[index]
+    }));
   },
 
   animate() {
-    if (!this.canvas || !this.ctx) return;
-    const { ctx, canvas, stars } = this;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    const t = performance.now() * 0.001;
 
-    const t = Date.now() * 0.001;
-
-    // Draw constellation lines
-    ctx.strokeStyle = 'rgba(232,201,125,0.2)';
-    ctx.lineWidth = 0.8;
+    ctx.lineWidth = 1;
     this.lines.forEach(([a, b]) => {
+      const one = this.stars[a];
+      const two = this.stars[b];
+      if (!one || !two) return;
+      const gradient = ctx.createLinearGradient(one.x, one.y, two.x, two.y);
+      gradient.addColorStop(0, 'rgba(215,183,106,.08)');
+      gradient.addColorStop(1, 'rgba(143,216,210,.36)');
+      ctx.strokeStyle = gradient;
       ctx.beginPath();
-      ctx.moveTo(stars[a].x, stars[a].y);
-      ctx.lineTo(stars[b].x, stars[b].y);
+      ctx.moveTo(one.x, one.y);
+      ctx.lineTo(two.x, two.y);
       ctx.stroke();
     });
 
-    // Draw stars
-    stars.forEach((s, i) => {
-      const pulse = 0.5 + 0.5 * Math.sin(t * s.speed + s.phase);
-      const alpha = s.tapped ? 1 : 0.3 + 0.5 * pulse;
-      const radius = s.tapped ? s.r * 1.4 : s.r;
+    this.stars.forEach((star, index) => {
+      const isTapped = this.tapped.has(index);
+      const pulse = 0.5 + 0.5 * Math.sin(t * 1.1 + star.phase);
+      const alpha = isTapped ? 1 : 0.35 + 0.4 * pulse;
+      const radius = isTapped ? star.r * 1.35 : star.r;
 
-      // Outer glow
-      const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, radius * 4);
-      grd.addColorStop(0, `rgba(232,201,125,${alpha * 0.4})`);
-      grd.addColorStop(1, 'transparent');
+      const glow = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, radius * 6);
+      glow.addColorStop(0, `rgba(215,183,106,${alpha * 0.22})`);
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(s.x, s.y, radius * 4, 0, Math.PI * 2);
-      ctx.fillStyle = grd;
+      ctx.arc(star.x, star.y, radius * 6, 0, Math.PI * 2);
       ctx.fill();
 
-      // Core star
+      ctx.fillStyle = isTapped ? `rgba(215,183,106,${alpha})` : `rgba(248,239,227,${alpha})`;
       ctx.beginPath();
-      ctx.arc(s.x, s.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = s.tapped
-        ? `rgba(232,201,125,${alpha})`
-        : `rgba(253,246,236,${alpha})`;
+      ctx.arc(star.x, star.y, radius, 0, Math.PI * 2);
       ctx.fill();
-
-      // Draw 4-pointed star shape for untapped
-      if (!s.tapped) {
-        ctx.save();
-        ctx.translate(s.x, s.y);
-        ctx.fillStyle = `rgba(253,246,236,${alpha * 0.6})`;
-        for (let p = 0; p < 4; p++) {
-          ctx.rotate(Math.PI / 2);
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.lineTo(radius * 0.4, radius * 1.8);
-          ctx.lineTo(0, radius * 1.4);
-          ctx.closePath();
-          ctx.fill();
-        }
-        ctx.restore();
-      }
     });
 
-    this.animFrame = requestAnimationFrame(() => this.animate());
+    if (this.nameVisible) {
+      ctx.save();
+      ctx.globalAlpha = 0.2 + 0.1 * Math.sin(t);
+      ctx.font = '28px "Courier Prime", monospace';
+      ctx.fillStyle = 'rgba(215,183,106,.8)';
+      ctx.textAlign = 'center';
+      ctx.letterSpacing = '6px';
+      ctx.fillText('JILEBI', window.innerWidth / 2, window.innerHeight / 2 + 12);
+      ctx.restore();
+    }
+
+    this.frame = requestAnimationFrame(() => this.animate());
   },
 
-  onCanvasClick(e) {
-    const rect = this.canvas.getBoundingClientRect();
-    const x = (e.clientX || e.pageX) - rect.left;
-    const y = (e.clientY || e.pageY) - rect.top;
-
-    // Remove existing popup
+  onTap(clientX, clientY) {
     if (this.activePopup) {
       this.activePopup.remove();
       this.activePopup = null;
     }
 
-    // Check for star hit (using enlarged hit area)
-    const hitRadius = 40;
+    const rect = this.canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
     let hit = -1;
-    let minDist = Infinity;
+    let best = Infinity;
 
-    this.stars.forEach((s, i) => {
-      const dist = Math.hypot(x - s.x, y - s.y);
-      if (dist < hitRadius && dist < minDist) {
-        minDist = dist;
-        hit = i;
+    this.stars.forEach((star, index) => {
+      const distance = Math.hypot(x - star.x, y - star.y);
+      if (distance < 42 && distance < best) {
+        hit = index;
+        best = distance;
       }
     });
 
-    if (hit === -1) return;
+    if (hit < 0) return;
 
-    const star = this.stars[hit];
-
-    if (!star.tapped) {
-      star.tapped = true;
+    if (!this.tapped.has(hit)) {
+      const previous = [...this.tapped].at(-1);
       this.tapped.add(hit);
-      Utils.vibrate([20]);
-      AudioManager.playStarCatch();
-
-      // Draw line to last tapped star
-      const prevTapped = [...this.tapped].filter(i => i !== hit);
-      if (prevTapped.length > 0) {
-        const prev = prevTapped[prevTapped.length - 1];
-        this.lines.push([prev, hit]);
-      }
-
+      if (previous !== undefined) this.lines.push([previous, hit]);
+      Utils.vibrate([18]);
+      AudioManager.tick();
       this.updateProgress();
-
       if (this.tapped.size >= this.target) {
-        setTimeout(() => this.showFinalMessage(), 1000);
+        setTimeout(() => this.finish(), 900);
       }
     }
 
-    // Show note popup
-    this.showNote(star);
+    this.showNote(this.stars[hit]);
   },
 
   showNote(star) {
     const popup = document.createElement('div');
     popup.className = 'star-note-popup';
     popup.textContent = star.note;
-
-    // Position popup near star but keep in bounds
-    const level = document.getElementById('level-4');
-    let px = star.x - 110;
-    let py = star.y - 100;
-
-    px = Math.max(10, Math.min(px, window.innerWidth - 240));
-    py = Math.max(10, Math.min(py, window.innerHeight - 120));
-
-    popup.style.left = px + 'px';
-    popup.style.top = py + 'px';
-
-    level.appendChild(popup);
+    const left = Math.max(12, Math.min(window.innerWidth - 270, star.x - 120));
+    const top = Math.max(82, Math.min(window.innerHeight - 140, star.y - 96));
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+    $('#level-4').appendChild(popup);
     this.activePopup = popup;
-
     setTimeout(() => {
       if (popup.isConnected) {
-        popup.style.transition = 'opacity 0.5s';
+        popup.style.transition = 'opacity 360ms var(--ease)';
         popup.style.opacity = '0';
-        setTimeout(() => popup.remove(), 500);
-        if (this.activePopup === popup) this.activePopup = null;
+        setTimeout(() => popup.remove(), 380);
       }
-    }, 2800);
+      if (this.activePopup === popup) this.activePopup = null;
+    }, 2600);
   },
 
   updateProgress() {
-    const el = document.getElementById('l4-progress');
-    if (el) el.textContent = `${this.tapped.size} / ${this.target} stars discovered`;
+    $('#l4-progress').textContent = `${this.tapped.size} / ${this.target} memories discovered`;
   },
 
-  async showFinalMessage() {
-    if (this.animFrame) {
-      cancelAnimationFrame(this.animFrame);
-      this.animFrame = null;
-    }
-
-    const msg = document.getElementById('l4-final-msg');
-    if (msg) msg.classList.add('visible');
-
-    await Utils.wait(3500);
+  async finish() {
+    if (this.nameVisible) return;
+    this.nameVisible = true;
+    AudioManager.chime('unlock');
+    $('#l4-final-msg').classList.add('visible');
+    await Utils.wait(3900);
     LevelManager.transition(5);
   }
 };
 
-/* ─── GAME ENGINE (Level 5) ──────────────────────────── */
+const Level5 = {
+  init() {
+    GameEngine.init();
+  }
+};
+
 const GameEngine = {
   completed: new Set(),
   total: 5,
-  heartsCount: 0,
-  heartsTarget: 15,
-  heartsAnimFrame: null,
-  catCount: 0,
-  houseChoices: { roof: null, view: null, mood: null },
-  moodAnswers: [],
+  heartsTarget: 12,
   moodQuestion: 0,
-
+  moodAnswers: [],
+  games: ['hearts', 'overthink', 'cat', 'house', 'mood'],
   moodQuestions: [
     {
-      q: 'Right now you feel like...',
-      opts: ['🌧️ Rain', '🌙 Midnight calm', '🔥 Quiet fire', '🌸 Just existing']
+      q: 'Your current inner weather is...',
+      opts: ['Rain on window', 'Mountain silence', 'Soft chaos', 'Midnight thoughts']
     },
     {
-      q: 'Your perfect Saturday is...',
-      opts: ['☕ Tea + window', '📱 Reels + blanket', '🏔️ Somewhere high', '😶 Alone & unbothered']
+      q: 'A perfect calm morning has...',
+      opts: ['Tea', 'No notifications', 'A view', 'A song on low']
     },
     {
-      q: 'When you\'re sad, you...',
-      opts: ['🔇 Go quiet', '📖 Read or scroll', '🎵 Listen on repeat', '😴 Sleep it off']
+      q: 'When feelings get heavy, you usually...',
+      opts: ['Go quiet', 'Overthink', 'Listen to songs', 'Need one safe person']
     },
     {
-      q: 'Your mood in one word...',
-      opts: ['✨ Soft', '🌪️ Chaotic', '🌊 Deep', '🌫️ Foggy']
+      q: 'Your travel mood is...',
+      opts: ['Kedarnath calling', 'Any road, bas chalo', 'Mist and windows', 'Peaceful yatra']
     },
     {
-      q: 'You are most yourself when...',
-      opts: ['Nobody\'s watching', 'With one close person', 'In a new place', 'In silence']
+      q: 'What should this year bring first?',
+      opts: ['Strength', 'Peace', 'Travel', 'A lighter heart']
     }
+  ],
+  moodResults: [
+    ['Mountain Silence Mode', '\u25b3', 'Grounded outside, deep inside. The kind of calm that still has a thousand thoughts behind it.'],
+    ['Tea And Safe Talks Mode', '\u2615', 'Warm, honest, a little emotional. The kind of Jilebi who needs gentleness more than advice.'],
+    ['Soft Chaos Mode', '\u223f', 'A whole storm, but somehow still sweet. Laughing, thinking, feeling, all at once.'],
+    ['Yatra Heart Mode', '\u2726', 'Your soul wants roads, bells, mountains, and that feeling of being quietly protected.'],
+    ['Quiet Fire Mode', '\u25c7', 'Not loud. Not easy to read. But strong in a way that keeps showing up.']
   ],
 
-  moodResults: [
-    {
-      title: 'Mountain Mode',
-      emoji: '🏔️',
-      desc: 'You\'re in your peak form — still, grounded, and unreachable by noise. Save this energy.'
-    },
-    {
-      title: 'Tea & Feelings Mode',
-      emoji: '☕',
-      desc: 'Cozy chaos inside, calm outside. The perfect Jilebi blend.'
-    },
-    {
-      title: 'Soft Chaos Mode',
-      emoji: '🌸',
-      desc: 'You\'re feeling everything at once and somehow making it adorable.'
-    },
-    {
-      title: '3AM Philosopher Mode',
-      emoji: '🌙',
-      desc: 'Deep thoughts, deeper silences. The kind of person who texts 3 AM wisdom and means it.'
-    },
-    {
-      title: 'Quiet Fire Mode',
-      emoji: '🔥',
-      desc: 'Still on the outside, absolutely burning with feeling on the inside. You contain multitudes.'
-    }
-  ],
+  init() {
+    this.completed = new Set(LevelManager.progress.games || []);
+    this.games.forEach(game => {
+      const card = $(`#card-${game}`);
+      if (card) {
+        card.onclick = () => this.openMiniGame(game);
+        card.classList.toggle('done', this.completed.has(game));
+      }
+    });
+    this.updateProgress();
+  },
 
   openMiniGame(type) {
-    const el = document.getElementById(`game-${type}`);
-    if (!el) return;
-    el.classList.add('visible');
-
+    const overlay = $(`#game-${type}`);
+    if (!overlay) return;
+    overlay.classList.add('visible');
+    AudioManager.chime('soft');
     if (type === 'hearts') this.startHearts();
-    if (type === 'cat') this.startCat();
-    if (type === 'mood') this.startMood();
     if (type === 'overthink') this.setupOverthink();
+    if (type === 'cat') this.startCat();
     if (type === 'house') this.setupHouse();
+    if (type === 'mood') this.startMood();
   },
 
   closeMiniGame(type) {
-    const el = document.getElementById(`game-${type}`);
-    if (el) el.classList.remove('visible');
-
-    if (type === 'hearts' && this.heartsAnimFrame) {
-      cancelAnimationFrame(this.heartsAnimFrame);
-      this.heartsAnimFrame = null;
-    }
+    const overlay = $(`#game-${type}`);
+    if (overlay) overlay.classList.remove('visible');
+    clearInterval(this.heartTimer);
+    clearInterval(this.catTimer);
   },
 
   markDone(type) {
     this.closeMiniGame(type);
     this.completed.add(type);
-    const card = document.getElementById(`card-${type}`);
+    const card = $(`#card-${type}`);
     if (card) card.classList.add('done');
+    Utils.saveProgressPatch({ games: [...this.completed] });
     this.updateProgress();
 
     if (this.completed.size >= this.total) {
-      setTimeout(() => this.unlockLevel5(), 800);
+      setTimeout(() => this.unlock(), 850);
     }
   },
 
   updateProgress() {
-    const el = document.getElementById('l5-progress');
-    if (el) el.textContent = `${this.completed.size} / ${this.total} games played`;
+    $('#l5-progress').textContent = `${this.completed.size} / ${this.total} games played`;
   },
 
-  // Hearts game
   startHearts() {
+    clearInterval(this.heartTimer);
     this.heartsCount = 0;
-    const counter = document.getElementById('hearts-counter');
-    const arena = document.getElementById('hearts-arena');
-    const quote = document.getElementById('hearts-quote');
-    const doneBtn = document.getElementById('hearts-done-btn');
-    if (counter) counter.textContent = '0';
-    if (quote) quote.style.display = 'none';
-    if (doneBtn) doneBtn.style.display = 'none';
-    if (arena) arena.innerHTML = '';
+    $('#hearts-counter').textContent = `0 / ${this.heartsTarget}`;
+    $('#hearts-quote').style.display = 'none';
+    $('#hearts-done-btn').style.display = 'none';
+    const arena = $('#hearts-arena');
+    arena.innerHTML = '';
 
-    const spawnHeart = () => {
-      if (!document.getElementById('game-hearts').classList.contains('visible')) return;
-      if (this.heartsCount >= this.heartsTarget) return;
-
-      const heart = document.createElement('div');
-      heart.className = 'falling-heart';
-      const emojis = ['💕', '💖', '💗', '🌸', '✨'];
-      heart.textContent = emojis[Utils.randInt(0, emojis.length - 1)];
-      heart.style.left = Utils.rand(5, 80) + '%';
-      const dur = Utils.rand(2.5, 5);
-      heart.style.setProperty('--fall-dur', `${dur}s`);
-      heart.style.animationDuration = `${dur}s`;
-      heart.style.color = `hsl(${Utils.rand(320, 360)}, 80%, 70%)`;
-
-      heart.addEventListener('click', () => {
-        if (heart.dataset.caught) return;
-        heart.dataset.caught = '1';
-        heart.style.animation = 'star-burst 0.3s forwards';
-        this.heartsCount++;
-        Utils.vibrate([15]);
-        AudioManager.playStarCatch();
-        if (counter) counter.textContent = this.heartsCount;
-        setTimeout(() => heart.remove(), 300);
+    const spawn = () => {
+      if (!$('#game-hearts').classList.contains('visible') || this.heartsCount >= this.heartsTarget) return;
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 'falling-heart';
+      dot.textContent = ['\u2726', '\u25cc', '\u25c7', '\u2736'][Utils.randInt(0, 3)];
+      dot.style.left = `${Utils.rand(6, 82)}%`;
+      dot.style.setProperty('--fall-dur', `${Utils.rand(3.2, 5.6)}s`);
+      dot.onclick = () => {
+        if (dot.dataset.hit) return;
+        dot.dataset.hit = '1';
+        dot.style.animation = 'starBurst 280ms var(--ease) forwards';
+        this.heartsCount += 1;
+        $('#hearts-counter').textContent = `${this.heartsCount} / ${this.heartsTarget}`;
+        Utils.vibrate([12]);
+        AudioManager.tick();
+        setTimeout(() => dot.remove(), 300);
 
         if (this.heartsCount >= this.heartsTarget) {
-          if (quote) quote.style.display = 'block';
-          if (doneBtn) doneBtn.style.display = '';
-        }
-      });
-
-      if (arena) arena.appendChild(heart);
-      setTimeout(() => { if (heart.isConnected) heart.remove(); }, dur * 1000);
-      setTimeout(spawnHeart, Utils.rand(400, 900));
-    };
-
-    spawnHeart();
-  },
-
-  // Overthink slider
-  setupOverthink() {
-    const slider = document.getElementById('overthink-slider');
-    const label = document.getElementById('overthink-label');
-    const char = document.getElementById('mountain-char');
-    const quote = document.getElementById('overthink-quote');
-    const doneBtn = document.getElementById('overthink-done-btn');
-
-    const labels = [
-      'Zero. Totally fine. Totally.',
-      'A little... maybe a lot.',
-      'Quite a lot, actually.',
-      'It\'s a whole drama up there.',
-      'Jilebi Mode: ON 🌀'
-    ];
-    const chars = ['🏔️', '🤔', '💭', '🌪️', '🌀'];
-
-    if (slider) {
-      slider.value = 0;
-      if (label) label.textContent = 'Slide to reveal...';
-      if (char) char.textContent = '🏔️';
-      if (quote) quote.style.display = 'none';
-
-      slider.oninput = () => {
-        const v = parseInt(slider.value);
-        if (label) label.textContent = labels[v];
-        if (char) {
-          char.style.transform = 'scale(1.2)';
-          char.textContent = chars[v];
-          setTimeout(() => { char.style.transform = 'scale(1)'; }, 200);
-        }
-        if (v >= 3) {
-          if (quote) quote.style.display = 'block';
+          $('#hearts-quote').style.display = 'block';
+          $('#hearts-done-btn').style.display = 'inline-flex';
+          clearInterval(this.heartTimer);
         }
       };
-    }
-  },
-
-  // Cat game
-  startCat() {
-    this.catCount = 0;
-    const counter = document.getElementById('cat-counter');
-    const arena = document.getElementById('cat-arena');
-    const cat = document.getElementById('game-cat-emoji');
-    const quote = document.getElementById('cat-quote');
-    const doneBtn = document.getElementById('cat-done-btn');
-
-    if (counter) counter.textContent = '0 / 5';
-    if (quote) quote.style.display = 'none';
-    if (doneBtn) doneBtn.style.display = 'none';
-
-    if (!cat || !arena) return;
-
-    const catReactions = ['🐱', '😸', '🙀', '😻', '🐾', '💕'];
-    let reactionIdx = 0;
-
-    const movecat = () => {
-      const arenaRect = arena.getBoundingClientRect();
-      const maxX = arenaRect.width - 60;
-      const maxY = arenaRect.height - 60;
-      cat.style.transition = `all ${Utils.rand(0.3, 0.6)}s cubic-bezier(0.34,1.56,0.64,1)`;
-      cat.style.left = Utils.rand(5, maxX > 10 ? maxX : 80) + 'px';
-      cat.style.top = Utils.rand(5, maxY > 10 ? maxY : 80) + 'px';
+      arena.appendChild(dot);
+      setTimeout(() => dot.remove(), 6200);
     };
 
-    movecat();
-    const moveInterval = setInterval(() => {
-      if (!document.getElementById('game-cat').classList.contains('visible')) {
-        clearInterval(moveInterval);
-        return;
-      }
-      movecat();
-    }, 900);
+    spawn();
+    this.heartTimer = setInterval(spawn, 520);
+  },
 
-    const tap = () => {
+  setupOverthink() {
+    const slider = $('#overthink-slider');
+    const label = $('#overthink-label');
+    const char = $('#mountain-char');
+    const quote = $('#overthink-quote');
+    const done = $('#overthink-done-btn');
+    const labels = [
+      'Suspiciously calm.',
+      'One tab open in the mind.',
+      'Several tabs. Music also playing.',
+      'Whole courtroom inside.',
+      'Jilebi Mode: every thought has a sequel.'
+    ];
+    const symbols = ['\u25b3', '\u00b7', '\u2234', '\u223f', '\u2736'];
+
+    slider.value = 0;
+    label.textContent = 'Slide slowly...';
+    char.textContent = symbols[0];
+    quote.style.display = 'none';
+    done.style.display = 'none';
+
+    slider.oninput = () => {
+      const value = Number(slider.value);
+      label.textContent = labels[value];
+      char.textContent = symbols[value];
+      char.style.transform = 'scale(1.15)';
+      setTimeout(() => { char.style.transform = 'scale(1)'; }, 180);
+      if (value >= 3) {
+        quote.style.display = 'block';
+        done.style.display = 'inline-flex';
+      }
+    };
+  },
+
+  startCat() {
+    clearInterval(this.catTimer);
+    this.catCount = 0;
+    const counter = $('#cat-counter');
+    const cat = $('#game-cat-emoji');
+    const arena = $('#cat-arena');
+    $('#cat-quote').style.display = 'none';
+    $('#cat-done-btn').style.display = 'none';
+    counter.textContent = '0 / 5';
+    cat.textContent = 'cat';
+
+    const move = () => {
+      const rect = arena.getBoundingClientRect();
+      cat.style.left = `${Utils.rand(6, Math.max(8, rect.width - 78))}px`;
+      cat.style.top = `${Utils.rand(6, Math.max(8, rect.height - 58))}px`;
+    };
+
+    move();
+    this.catTimer = setInterval(move, 850);
+    cat.onclick = () => {
       if (this.catCount >= 5) return;
-      this.catCount++;
-      Utils.vibrate([20]);
-      AudioManager.playStarCatch();
-      cat.textContent = catReactions[reactionIdx++ % catReactions.length];
-      if (counter) counter.textContent = `${this.catCount} / 5`;
-      cat.style.transform = 'scale(1.4) rotate(10deg)';
-      setTimeout(() => { cat.style.transform = 'scale(1) rotate(0deg)'; }, 300);
+      this.catCount += 1;
+      counter.textContent = `${this.catCount} / 5`;
+      cat.textContent = ['caught', 'again', 'fast', 'almost', 'done'][this.catCount - 1];
+      cat.style.transform = 'scale(1.08)';
+      setTimeout(() => { cat.style.transform = 'scale(1)'; }, 180);
+      Utils.vibrate([12]);
+      AudioManager.tick();
 
       if (this.catCount >= 5) {
-        clearInterval(moveInterval);
-        if (quote) quote.style.display = 'block';
-        if (doneBtn) doneBtn.style.display = '';
+        clearInterval(this.catTimer);
+        $('#cat-quote').style.display = 'block';
+        $('#cat-done-btn').style.display = 'inline-flex';
       } else {
-        movecat();
+        move();
       }
     };
-
-    cat.onclick = tap;
-    cat.ontouchstart = (e) => { e.preventDefault(); tap(); };
   },
 
-  // House builder
   setupHouse() {
     this.houseChoices = { roof: null, view: null, mood: null };
-    const preview = document.getElementById('house-preview');
-    const quote = document.getElementById('house-quote');
-    const doneBtn = document.getElementById('house-done-btn');
-    if (preview) preview.textContent = '🏠';
-    if (quote) quote.style.display = 'none';
-    if (doneBtn) doneBtn.style.display = 'none';
+    $('#house-preview-text').textContent = 'Choose all three pieces';
+    $('#house-quote').style.display = 'none';
+    $('#house-done-btn').style.display = 'none';
 
-    document.querySelectorAll('.house-choice-btn').forEach(btn => {
-      btn.classList.remove('selected');
-      btn.onclick = () => {
-        const group = btn.dataset.group;
-        document.querySelectorAll(`.house-choice-btn[data-group="${group}"]`)
-          .forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        this.houseChoices[group] = btn.dataset.val;
+    $$('.house-choice-btn').forEach(button => {
+      button.classList.remove('selected');
+      button.onclick = () => {
+        const group = button.dataset.group;
+        $$(`.house-choice-btn[data-group="${group}"]`).forEach(item => item.classList.remove('selected'));
+        button.classList.add('selected');
+        this.houseChoices[group] = button.dataset.val;
         this.updateHousePreview();
       };
     });
   },
 
   updateHousePreview() {
-    const { roof, view, mood } = this.houseChoices;
-    const preview = document.getElementById('house-preview');
-    const quote = document.getElementById('house-quote');
-    const doneBtn = document.getElementById('house-done-btn');
+    const values = Object.values(this.houseChoices).filter(Boolean);
+    $('#house-preview-text').textContent = values.length ? values.join(' + ') : 'Choose all three pieces';
 
-    const roofEmoji = roof ? roof.split(' ')[0] : '🏠';
-    const viewEmoji = view ? view.split(' ')[0] : '';
-    const moodEmoji = mood ? mood.split(' ')[0] : '';
-
-    if (preview) preview.textContent = `${roofEmoji}${viewEmoji}${moodEmoji}`;
-
-    if (roof && view && mood) {
-      if (quote) quote.style.display = 'block';
-      if (doneBtn) doneBtn.style.display = '';
+    if (values.length === 3) {
+      $('#house-quote').style.display = 'block';
+      $('#house-done-btn').style.display = 'inline-flex';
+      AudioManager.chime('soft');
     }
   },
 
-  // Mood quiz
   startMood() {
-    this.moodAnswers = [];
     this.moodQuestion = 0;
-    const result = document.getElementById('mood-result');
-    const doneBtn = document.getElementById('mood-done-btn');
-    if (result) result.style.display = 'none';
-    if (doneBtn) doneBtn.style.display = 'none';
+    this.moodAnswers = [];
+    $('#mood-result').style.display = 'none';
+    $('#mood-done-btn').style.display = 'none';
     this.showMoodQuestion();
   },
 
   showMoodQuestion() {
-    const q = this.moodQuestions[this.moodQuestion];
-    const title = document.getElementById('mood-title');
-    const sub = document.getElementById('mood-sub');
-    const qEl = document.getElementById('mood-question');
-    const opts = document.getElementById('mood-options');
+    const current = this.moodQuestions[this.moodQuestion];
+    $('#mood-title').textContent = 'Which Jilebi Today?';
+    $('#mood-sub').textContent = `Question ${this.moodQuestion + 1} of ${this.moodQuestions.length}`;
+    $('#mood-question').textContent = current.q;
+    const options = $('#mood-options');
+    options.innerHTML = '';
 
-    if (title) title.textContent = 'Which Jilebi Today? ✨';
-    if (sub) sub.textContent = `QUESTION ${this.moodQuestion + 1} OF ${this.moodQuestions.length}`;
-    if (qEl) qEl.textContent = q.q;
-
-    if (opts) {
-      opts.innerHTML = '';
-      q.opts.forEach((opt, i) => {
-        const btn = document.createElement('button');
-        btn.className = 'mood-option-btn';
-        btn.textContent = opt;
-        btn.onclick = () => this.moodAnswer(i);
-        opts.appendChild(btn);
-      });
-    }
+    current.opts.forEach((option, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'mood-option-btn';
+      button.textContent = option;
+      button.onclick = () => this.answerMood(index);
+      options.appendChild(button);
+    });
   },
 
-  async moodAnswer(choice) {
-    this.moodAnswers.push(choice);
-    this.moodQuestion++;
+  async answerMood(index) {
+    this.moodAnswers.push(index);
+    this.moodQuestion += 1;
+    AudioManager.tick();
 
     if (this.moodQuestion < this.moodQuestions.length) {
-      const qEl = document.getElementById('mood-question');
-      const opts = document.getElementById('mood-options');
-      if (qEl) { qEl.style.opacity = '0'; }
-      if (opts) { opts.style.opacity = '0'; }
-      await Utils.wait(200);
+      $('#mood-question').style.opacity = '0';
+      $('#mood-options').style.opacity = '0';
+      await Utils.wait(180);
       this.showMoodQuestion();
-      if (qEl) { qEl.style.transition = 'opacity 0.3s'; qEl.style.opacity = '1'; }
-      if (opts) { opts.style.transition = 'opacity 0.3s'; opts.style.opacity = '1'; }
+      $('#mood-question').style.opacity = '1';
+      $('#mood-options').style.opacity = '1';
     } else {
       this.showMoodResult();
     }
   },
 
   showMoodResult() {
-    const opts = document.getElementById('mood-options');
-    const qEl = document.getElementById('mood-question');
-    const sub = document.getElementById('mood-sub');
-    const result = document.getElementById('mood-result');
-    const doneBtn = document.getElementById('mood-done-btn');
-
-    if (opts) opts.innerHTML = '';
-    if (qEl) qEl.textContent = '';
-    if (sub) sub.textContent = 'AND THE VERDICT IS...';
-
-    // Pick result based on most common answer type
-    const idx = this.moodAnswers.reduce((a, b) => a + b, 0) % this.moodResults.length;
-    const res = this.moodResults[idx];
-
-    const emojiEl = document.getElementById('mood-result-emoji');
-    const titleEl = document.getElementById('mood-result-title');
-    const descEl = document.getElementById('mood-result-desc');
-
-    if (emojiEl) emojiEl.textContent = res.emoji;
-    if (titleEl) titleEl.textContent = res.title;
-    if (descEl) descEl.textContent = res.desc;
-
-    if (result) result.style.display = 'block';
-    if (doneBtn) doneBtn.style.display = '';
+    $('#mood-options').innerHTML = '';
+    $('#mood-question').textContent = '';
+    $('#mood-sub').textContent = 'Verdict';
+    const result = this.moodResults[this.moodAnswers.reduce((sum, item) => sum + item, 0) % this.moodResults.length];
+    $('#mood-result-symbol').textContent = result[1];
+    $('#mood-result-title').textContent = result[0];
+    $('#mood-result-desc').textContent = result[2];
+    $('#mood-result').style.display = 'block';
+    $('#mood-done-btn').style.display = 'inline-flex';
   },
 
-  async unlockLevel5() {
-    // Confetti burst
+  async unlock() {
     this.confetti();
-    await Utils.wait(1500);
+    await Utils.wait(1300);
     LevelManager.transition(6);
   },
 
   confetti() {
-    const emojis = ['🌸', '✨', '💕', '🌟', '🏔️', '🌙', '⭐'];
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 26; i += 1) {
       setTimeout(() => {
-        const el = document.createElement('div');
-        el.className = 'confetti-piece';
-        el.textContent = emojis[Utils.randInt(0, emojis.length - 1)];
-        el.style.left = Utils.rand(5, 95) + 'vw';
-        el.style.top = '-20px';
-        el.style.setProperty('--fall-dur', `${Utils.rand(2.5, 5)}s`);
-        el.style.animationDelay = `0s`;
-        el.style.opacity = '1';
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 5500);
-      }, i * 80);
+        const piece = document.createElement('span');
+        piece.className = 'confetti-piece';
+        piece.textContent = ['\u2726', '\u25cc', '\u25c7'][Utils.randInt(0, 2)];
+        piece.style.left = `${Utils.rand(5, 95)}vw`;
+        piece.style.setProperty('--fall-dur', `${Utils.rand(2.6, 4.8)}s`);
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), 5200);
+      }, i * 55);
     }
   }
 };
 
-// Make GameEngine globally accessible (for inline onclick handlers in HTML)
-window.GameEngine = GameEngine;
-
-/* ─── LEVEL 6 — THE LETTER ───────────────────────────── */
 const Level6 = {
   letterLines: [
     { text: 'Jilebi,', cls: 'greeting' },
     { text: '', cls: 'blank' },
-    { text: 'You don\'t always have to be okay.', cls: '' },
-    { text: 'You don\'t always have to explain yourself.', cls: '' },
-    { text: 'You don\'t always have to carry everything quietly.', cls: '' },
+    { text: 'It is crazy how many memories can fit into a short time.', cls: '' },
+    { text: 'Random reels. Late-night chats. Long calls that did not feel long while they were happening.', cls: '' },
+    { text: 'Songs, teasing, language teaching, little parts of life shared without making a big announcement out of it.', cls: '' },
     { text: '', cls: 'blank' },
-    { text: 'But I think you do anyway.', cls: 'indent' },
-    { text: 'And that\'s what makes you, you.', cls: 'indent' },
+    { text: 'Some connections do not arrive loudly.', cls: '' },
+    { text: 'They become familiar through small things.', cls: 'indent' },
+    { text: 'A joke here. A soft support there. A conversation that feels easier than expected.', cls: 'indent' },
     { text: '', cls: 'blank' },
-    { text: 'The world doesn\'t always understand people like you —', cls: '' },
-    { text: 'the ones who feel deeply, love quietly, and dream of mountains.', cls: 'indent' },
+    { text: 'What I value most is not only that we laughed.', cls: '' },
+    { text: 'It is that we understood each other in quiet ways too.', cls: '' },
+    { text: 'The blushing talks, the comfort, the dreams, the way songs and silences started meaning something.', cls: '' },
     { text: '', cls: 'blank' },
-    { text: 'Your softness is not a weakness.', cls: '' },
-    { text: 'It is the rarest kind of strength.', cls: '' },
+    { text: 'I hope this year gives you the peace you keep imagining.', cls: '' },
+    { text: 'Kedarnath, Teerth Yatra, travelling, a pahad ka ghar, calm mornings, mountain silence.', cls: 'indent' },
+    { text: 'Not all at once maybe. But slowly. Truly. In a way that feels yours.', cls: 'indent' },
     { text: '', cls: 'blank' },
-    { text: 'I hope one day — not someday, but one day soon —', cls: '' },
-    { text: 'you find yourself sitting somewhere high and quiet.', cls: 'indent' },
-    { text: 'No noise. No expectations.', cls: 'indent' },
-    { text: 'Just you, the sky, and a cup of tea.', cls: 'indent' },
+    { text: 'I hope you never feel like you have to become louder to be understood.', cls: '' },
+    { text: 'Your quiet heart is already full of meaning.', cls: '' },
+    { text: 'Your soft chaos is still soft. Your strength is still real.', cls: '' },
     { text: '', cls: 'blank' },
-    { text: 'I hope Kedarnath happens.', cls: '' },
-    { text: 'I hope the pahad ka ghar happens.', cls: '' },
-    { text: 'I hope the Teerth Yatra happens.', cls: '' },
-    { text: 'I hope every version of peace you have ever imagined — happens.', cls: '' },
-    { text: '', cls: 'blank' },
-    { text: 'Because you deserve the mornings that feel like prayers.', cls: '' },
-    { text: 'You deserve the roads that feel like freedom.', cls: '' },
-    { text: 'You deserve the kind of life that feels like', cls: '' },
-    { text: 'a breath you\'ve been holding for too long.', cls: 'indent' },
-    { text: '', cls: 'blank' },
-    { text: 'Happy Birthday, Jilebi.', cls: 'sign-off' },
-    { text: 'Not just for today —', cls: 'sign-off' },
-    { text: 'but for every soft, deep, beautiful version of you', cls: 'sign-off' },
-    { text: 'that has ever existed,', cls: 'sign-off' },
-    { text: 'and every version still to come.', cls: 'sign-off' },
-    { text: '', cls: 'blank' },
-    { text: 'May this year be the one that begins to feel like yours.', cls: 'sign-off' },
+    { text: 'Happy Birthday, jilebiii.', cls: 'sign-off' },
+    { text: 'Your vibe, your presence, and the memories we created will always mean a lot to me.', cls: 'sign-off' },
+    { text: 'May this year bring peace, happiness, strength, and everything your heart is quietly wishing for.', cls: 'sign-off' }
   ],
 
   init() {
@@ -1614,259 +1365,229 @@ const Level6 = {
   },
 
   async renderLetter() {
-    const paper = document.getElementById('l6-paper');
-    if (!paper) return;
+    const paper = $('#l6-paper');
+    const seal = $('#l6-seal');
+    const continueBtn = $('#l6-continue');
+    const pause = $('#letter-pause');
 
-    // Clear existing lines (keep seal at end)
-    const seal = document.getElementById('l6-seal');
+    continueBtn.classList.remove('visible');
+    seal.classList.remove('visible');
     paper.innerHTML = '';
-    if (seal) paper.appendChild(seal);
+    paper.appendChild(seal);
 
-    // Insert lines before seal
+    pause.classList.add('visible');
+    await Utils.wait(1350);
+    pause.classList.remove('visible');
+    await Utils.wait(520);
+
     const fragment = document.createDocumentFragment();
-    const lineEls = [];
-
-    this.letterLines.forEach((line, i) => {
-      const el = document.createElement('span');
-      el.className = `letter-line ${line.cls}`;
-      if (line.text) el.textContent = '\u00A0'; // Non-breaking space placeholder
-      fragment.appendChild(el);
-      lineEls.push({ el, line });
+    const lineEls = this.letterLines.map(line => {
+      const span = document.createElement('span');
+      span.className = `letter-line ${line.cls}`;
+      span.textContent = line.text ? '\u00a0' : '';
+      fragment.appendChild(span);
+      return { span, line };
     });
 
     paper.insertBefore(fragment, seal);
 
-    // Reveal lines one by one with ink-drop effect
-    for (let i = 0; i < lineEls.length; i++) {
-      const { el, line } = lineEls[i];
-
-      await Utils.wait(line.cls === 'blank' ? 200 : 180);
-
-      el.style.animation = 'ink-drop 0.5s cubic-bezier(0.16,1,0.3,1) forwards';
-      if (line.text) el.textContent = line.text;
-
-      // Auto-scroll to keep current line visible
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    for (const { span, line } of lineEls) {
+      await Utils.wait(line.cls === 'blank' ? 190 : 165);
+      if (line.text) span.textContent = line.text;
+      span.classList.add('revealed');
+      span.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // Show seal
-    await Utils.wait(800);
-    if (seal) seal.classList.add('visible');
-
-    await Utils.wait(1200);
-
-    // Show continue button
-    const btn = document.getElementById('l6-continue');
-    if (btn) btn.classList.add('visible');
+    await Utils.wait(760);
+    seal.classList.add('visible');
+    AudioManager.chime('deep');
+    await Utils.wait(1050);
+    continueBtn.classList.add('visible');
   }
 };
 
-/* ─── LEVEL 7 — FINAL CINEMATIC ──────────────────────── */
 const Level7 = {
+  runToken: 0,
+
   init() {
-    this.runCinematic();
-  },
-
-  async runCinematic() {
-    // Scene 1: Mountain Snowfall
-    await this.showScene('scene-1', 5000, () => this.createSnow());
-
-    // Scene 2: Lanterns Rising
-    await this.showScene('scene-2', 9000, () => this.launchLanterns());
-
-    // Scene 3: Moonlight
-    await this.showScene('scene-3', 4500, () => this.sparkleStars());
-
-    // Scene 4: Final Quote
-    await this.showScene('scene-4', 0, () => this.finalQuote());
-  },
-
-  showScene(id, duration, onShow) {
-    return new Promise(async resolve => {
-      const scene = document.getElementById(id);
-      if (!scene) { resolve(); return; }
-
-      scene.classList.add('active');
-      if (onShow) onShow();
-
-      if (duration > 0) {
-        await Utils.wait(duration);
-        scene.style.transition = 'opacity 1.2s';
-        scene.style.opacity = '0';
-        await Utils.wait(1200);
-        scene.classList.remove('active');
-        scene.style.opacity = '';
-        scene.style.transition = '';
-      }
-      resolve();
+    this.runToken += 1;
+    const token = this.runToken;
+    $$('.cinematic-scene').forEach(scene => {
+      scene.classList.remove('active');
+      scene.style.opacity = '';
     });
+    $$('.final-quote-line').forEach(line => line.classList.remove('visible'));
+    $('#final-restart-btn').classList.remove('visible');
+    $('#rising-lantern').classList.remove('visible');
+    this.run(token);
+  },
+
+  async run(token) {
+    await this.showScene('scene-1', 5600, () => this.createSnow(), token);
+    await this.showScene('scene-2', 6500, () => this.launchLanterns(), token);
+    await this.showScene('scene-3', 5700, () => this.sparkleStars(), token);
+    await this.showScene('scene-4', 0, () => this.finalQuote(token), token);
+  },
+
+  async showScene(id, duration, onShow, token) {
+    if (token !== this.runToken) return;
+    const scene = $(`#${id}`);
+    scene.classList.add('active');
+    if (onShow) onShow();
+    if (!duration) return;
+    await Utils.wait(duration);
+    if (token !== this.runToken) return;
+    scene.style.opacity = '0';
+    await Utils.wait(1200);
+    scene.classList.remove('active');
+    scene.style.opacity = '';
   },
 
   createSnow() {
-    const container = document.getElementById('snowfall-container');
-    if (!container) return;
+    const container = $('#snowfall-container');
     container.innerHTML = '';
-
-    for (let i = 0; i < 60; i++) {
-      const snow = document.createElement('div');
+    for (let i = 0; i < 66; i += 1) {
+      const snow = document.createElement('span');
       snow.className = 'snow-particle';
-      snow.textContent = '•';
-      snow.style.left = Utils.rand(0, 100) + 'vw';
-      snow.style.fontSize = Utils.rand(4, 12) + 'px';
-      const dur = Utils.rand(4, 9);
-      snow.style.setProperty('--snow-dur', `${dur}s`);
-      snow.style.animationDuration = `${dur}s`;
-      snow.style.animationDelay = `${Utils.rand(0, 5)}s`;
+      snow.textContent = '\u00b7';
+      snow.style.left = `${Utils.rand(0, 100)}vw`;
+      snow.style.fontSize = `${Utils.rand(10, 22)}px`;
+      snow.style.setProperty('--snow-dur', `${Utils.rand(5, 10)}s`);
+      snow.style.animationDelay = `${Utils.rand(0, 4)}s`;
       container.appendChild(snow);
     }
   },
 
   launchLanterns() {
-    const container = document.getElementById('lanterns-container');
-    if (!container) return;
+    const container = $('#lanterns-container');
     container.innerHTML = '';
-
-    const lanternEmojis = ['🏮', '🕯️', '✨', '⭐', '🌟'];
-
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 18; i += 1) {
       setTimeout(() => {
-        const l = document.createElement('div');
-        l.className = 'lantern';
-        l.textContent = lanternEmojis[i % lanternEmojis.length];
-        l.style.left = Utils.rand(5, 90) + 'vw';
-        const dur = Utils.rand(8, 14);
-        l.style.setProperty('--rise-dur', `${dur}s`);
-        l.style.animationDuration = `${dur}s`;
-        l.style.fontSize = Utils.rand(24, 44) + 'px';
-        container.appendChild(l);
-      }, i * 500);
+        const lantern = document.createElement('span');
+        lantern.className = 'lantern';
+        lantern.style.left = `${Utils.rand(5, 94)}vw`;
+        lantern.style.setProperty('--rise-dur', `${Utils.rand(8, 13)}s`);
+        container.appendChild(lantern);
+      }, i * 260);
     }
   },
 
   sparkleStars() {
-    const container = document.getElementById('scene3-stars');
-    if (!container) return;
-
-    for (let i = 0; i < 40; i++) {
-      setTimeout(() => {
-        const s = document.createElement('div');
-        s.style.cssText = `
-          position:absolute;
-          left:${Utils.rand(2, 98)}%;
-          top:${Utils.rand(5, 90)}%;
-          color:white;
-          font-size:${Utils.rand(6, 16)}px;
-          animation:twinkle ${Utils.rand(2, 5)}s ease-in-out infinite;
-          animation-delay:${Utils.rand(0, 2)}s;
-        `;
-        s.textContent = '✦';
-        container.appendChild(s);
-      }, i * 100);
+    const container = $('#scene3-stars');
+    container.innerHTML = '';
+    for (let i = 0; i < 42; i += 1) {
+      const star = document.createElement('span');
+      star.textContent = '\u2726';
+      star.style.cssText = `
+        position:absolute;
+        left:${Utils.rand(2, 98)}%;
+        top:${Utils.rand(4, 92)}%;
+        color:rgba(248,239,227,.75);
+        font-size:${Utils.rand(8, 16)}px;
+        animation: quoteDrift ${Utils.rand(3, 7)}s ease-in-out infinite;
+        animation-delay:-${Utils.rand(0, 5)}s;
+      `;
+      container.appendChild(star);
     }
   },
 
-  async finalQuote() {
-    const lines = [
-      { id: 'fq-1', delay: 800 },
-      { id: 'fq-2', delay: 2200 },
-      { id: 'fq-3', delay: 4200 },
-      { id: 'fq-4', delay: 6200 }
-    ];
-
-    for (const { id, delay } of lines) {
-      await Utils.wait(delay);
-      const el = document.getElementById(id);
-      if (el) {
-        el.style.transition = 'opacity 1.2s ease';
-        el.style.opacity = '1';
-      }
+  async finalQuote(token) {
+    const sequence = ['#fq-1', '#fq-2', '#fq-3', '#fq-4'];
+    for (const selector of sequence) {
+      await Utils.wait(selector === '#fq-1' ? 850 : 1450);
+      if (token !== this.runToken) return;
+      $(selector).classList.add('visible');
+      AudioManager.chime('soft');
     }
 
-    // Rising lantern → star transformation
-    await Utils.wait(8000);
-    const lantern = document.getElementById('rising-lantern');
-    if (lantern) {
-      lantern.style.transition = 'opacity 0.5s';
-      lantern.style.opacity = '1';
-      setTimeout(() => {
-        lantern.textContent = '⭐';
-        lantern.style.filter = 'drop-shadow(0 0 20px gold)';
-      }, 4000);
-    }
+    await Utils.wait(2200);
+    if (token !== this.runToken) return;
+    $('#rising-lantern').classList.add('visible');
 
-    // Fade to black
-    await Utils.wait(10000);
-    const scene4 = document.getElementById('scene-4');
-    if (scene4) {
-      scene4.style.transition = 'opacity 3s';
-      scene4.style.opacity = '0.3';
-    }
-
-    // Show restart
-    await Utils.wait(2000);
-    const restartBtn = document.getElementById('final-restart-btn');
-    if (restartBtn) restartBtn.classList.add('visible');
+    await Utils.wait(6500);
+    if (token !== this.runToken) return;
+    $('#final-restart-btn').classList.add('visible');
   }
 };
 
-/* ─── EASTER EGG ─────────────────────────────────────── */
+const SecretMoments = {
+  async pocketSunrise() {
+    const overlay = document.createElement('div');
+    overlay.className = 'pocket-sunrise';
+    overlay.innerHTML = `
+      <h2>JILEBI</h2>
+      <p>For one second, the night becomes a morning from her dream.</p>
+      <p>21 / 05 / 2006</p>
+    `;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('visible'));
+    AudioManager.chime('unlock');
+    await Utils.wait(2450);
+    overlay.classList.remove('visible');
+    await Utils.wait(850);
+    overlay.remove();
+  }
+};
+
 const EasterEgg = {
   taps: 0,
   timer: null,
+  messages: [
+    'Secret: calm mornings are already looking for her.',
+    'Secret: the moon remembered 21/05/2006.',
+    'Secret: some silences are full, not empty.'
+  ],
 
   init() {
-    const moon = document.getElementById('easter-moon');
-    if (!moon) return;
+    $('#easter-moon').onclick = () => this.tap();
+    $('#secret-close').onclick = () => $('#secret-vault').classList.remove('visible');
+  },
 
-    moon.addEventListener('click', () => {
-      this.taps++;
-      clearTimeout(this.timer);
-      this.timer = setTimeout(() => { this.taps = 0; }, 2000);
+  tap() {
+    this.taps += 1;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => { this.taps = 0; }, 2200);
 
-      if (this.taps >= 3) {
-        this.taps = 0;
-        const msg = document.getElementById('easter-msg');
-        if (msg) {
-          msg.classList.add('visible');
-          setTimeout(() => msg.classList.remove('visible'), 4000);
-        }
-      }
-    });
+    if (this.taps === 3) {
+      const msg = $('#easter-msg');
+      msg.textContent = this.messages[Utils.randInt(0, this.messages.length - 1)];
+      msg.classList.add('visible');
+      AudioManager.chime('soft');
+      setTimeout(() => msg.classList.remove('visible'), 4200);
+    }
+
+    if (this.taps >= 7) {
+      this.showSecret();
+      this.taps = 0;
+    }
+  },
+
+  showSecret() {
+    $('#secret-vault').classList.add('visible');
+    AudioManager.chime('unlock');
   }
 };
 
-/* ─── MAIN INIT ──────────────────────────────────────── */
-window.addEventListener('DOMContentLoaded', async () => {
-  // Hide loading screen after brief delay
-  await Utils.wait(800);
-  const loading = document.getElementById('loading-screen');
-  if (loading) {
-    loading.style.transition = 'opacity 0.6s';
-    loading.style.opacity = '0';
-    setTimeout(() => loading.remove(), 600);
-  }
+window.GameEngine = GameEngine;
+window.LevelManager = LevelManager;
 
-  // Initialize subsystems
+window.addEventListener('DOMContentLoaded', async () => {
+  ImagePreloader.preload();
   ParticleSystem.init();
   AudioManager.init();
   EasterEgg.init();
 
-  // Make LevelManager globally accessible
-  window.LevelManager = LevelManager;
+  await Utils.wait(700);
+  const loading = $('#loading-screen');
+  loading.style.transition = 'opacity 560ms var(--ease)';
+  loading.style.opacity = '0';
+  setTimeout(() => loading.remove(), 620);
 
-  // Start
   LevelManager.init();
 });
 
-// Handle visibility change (pause/resume ambient)
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    if (AudioManager.masterGain && !AudioManager.muted) {
-      AudioManager.masterGain.gain.setTargetAtTime(0, AudioManager.ctx.currentTime, 0.5);
-    }
-  } else {
-    if (AudioManager.started && !AudioManager.muted && AudioManager.masterGain) {
-      AudioManager.masterGain.gain.setTargetAtTime(AudioManager.volume, AudioManager.ctx.currentTime, 0.5);
-    }
-  }
+  if (!AudioManager.ready || !AudioManager.masterGain || !AudioManager.started) return;
+  const target = document.hidden || AudioManager.muted ? 0 : AudioManager.volume;
+  AudioManager.masterGain.gain.setTargetAtTime(target, AudioManager.ctx.currentTime, 0.4);
 });
