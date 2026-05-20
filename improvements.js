@@ -84,8 +84,13 @@ const GyroParallax = {
 
     window.addEventListener('deviceorientation', event => {
       if (LevelManager.current !== 0) return;
-      const tx = Math.max(-12, Math.min(12, event.gamma || 0));
-      const ty = Math.max(-8, Math.min(8, (event.beta || 0) - 45));
+      if (!this._calibrated) {
+        this._baseGamma = event.gamma || 0;
+        this._baseBeta = event.beta || 45;
+        this._calibrated = true;
+      }
+      const tx = Math.max(-12, Math.min(12, (event.gamma || 0) - this._baseGamma));
+      const ty = Math.max(-8, Math.min(8, (event.beta || 45) - this._baseBeta));
 
       const moon = document.querySelector('.l0-moon');
       const a1 = document.querySelector('.l0-aurora');
@@ -163,7 +168,7 @@ const ReasonsVault = {
   show() {
     if (!document.getElementById('reasons-overlay')) this._build();
     const overlay = document.getElementById('reasons-overlay');
-    overlay.style.display = 'flex';
+    overlay.classList.add('visible');
     overlay.scrollTop = 0;
     AudioManager.chime('unlock');
     Utils.vibrate([20, 60, 20]);
@@ -171,7 +176,7 @@ const ReasonsVault = {
 
   hide() {
     const overlay = document.getElementById('reasons-overlay');
-    if (overlay) overlay.style.display = 'none';
+    if (overlay) overlay.classList.remove('visible');
   },
 
   _build() {
@@ -359,10 +364,6 @@ Level7.finalQuote = async function (token) {
     bottom: max(4.6rem, calc(env(safe-area-inset-bottom) + 4rem));
     z-index: 5;
     transform: translateX(-50%);
-    opacity: 0;
-    pointer-events: none;
-    font-size: 0.68rem;
-    transition: opacity 1200ms var(--ease), transform 260ms var(--spring);
   `;
   btn.onclick = () => ReasonsVault.show();
   btn.addEventListener('mouseenter', () => {
@@ -376,8 +377,7 @@ Level7.finalQuote = async function (token) {
 
   setTimeout(() => {
     if (token !== Level7.runToken) return;
-    btn.style.opacity = '1';
-    btn.style.pointerEvents = 'all';
+    btn.classList.add('visible');
   }, 9800);
 };
 

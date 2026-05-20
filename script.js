@@ -165,7 +165,8 @@ const AudioManager = {
         this.oscillators.push(osc, lfo);
       });
       this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
-      this.masterGain.gain.linearRampToValueAtTime(this.volume, this.ctx.currentTime + 3);
+      this.masterGain.gain.linearRampToValueAtTime(this.volume * 0.4, this.ctx.currentTime + 4);
+      this.masterGain.gain.linearRampToValueAtTime(this.volume, this.ctx.currentTime + 12);
     } catch (err) { this.ready = false; }
   },
 
@@ -300,6 +301,11 @@ const WishJar = {
     input.value = '';
     overlay.classList.add('visible');
     setTimeout(() => input.focus(), 500);
+    const autoGrow = () => {
+      input.style.height = 'auto';
+      input.style.height = `${Math.min(input.scrollHeight, 160)}px`;
+    };
+    input.addEventListener('input', autoGrow, { passive: true });
 
     releaseBtn.onclick = () => {
       const text = input.value.trim();
@@ -562,8 +568,9 @@ const Level1 = {
     star.type = 'button';
     star.className = 'game-star';
     star.textContent = '\u2726';
-    star.style.left = `${Utils.rand(8, 84)}vw`;
-    star.style.top = `${Utils.rand(16, 75)}vh`;
+    const safeW = window.innerWidth < 420 ? 10 : 8;
+    star.style.left = `${Utils.rand(safeW, 100 - safeW - 4)}vw`;
+    star.style.top = `${Utils.rand(18, 74)}vh`;
     star.style.color = `hsl(${Utils.rand(36, 52)}, 80%, ${Utils.rand(64, 78)}%)`;
     star.setAttribute('aria-label', 'Catch star');
 
@@ -789,6 +796,28 @@ const Level3 = {
     $('#dest-card-title').textContent = dest.name;
     $('#dest-card-text').textContent = dest.text;
     overlay.classList.add('visible');
+    const closeBtn = document.getElementById('dest-card-close');
+    if (closeBtn) {
+      closeBtn.textContent = 'close';
+      closeBtn.style.cssText = `
+        position: static;
+        display: block;
+        margin: 1.5rem auto 0;
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: rgba(248,239,227,0.36);
+        background: none;
+        border: none;
+        cursor: pointer;
+        width: auto;
+        height: auto;
+        border-radius: 0;
+      `;
+      const card = closeBtn.closest('.dest-card');
+      if (card) card.appendChild(closeBtn);
+    }
     $('#dest-card-close').onclick = () => overlay.classList.remove('visible');
     overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('visible'); };
   },
@@ -956,10 +985,12 @@ const Level4 = {
     const popup = document.createElement('div');
     popup.className = 'star-note-popup';
     popup.textContent = star.note;
-    const left = Math.max(12, Math.min(window.innerWidth - 270, star.x - 120));
-    const top = Math.max(82, Math.min(window.innerHeight - 140, star.y - 96));
+    const popupW = Math.min(260, window.innerWidth - 28);
+    const left = Math.max(12, Math.min(window.innerWidth - popupW - 12, star.x - popupW / 2));
+    const top = Math.max(76, Math.min(window.innerHeight - 130, star.y - 96));
     popup.style.left = `${left}px`;
     popup.style.top = `${top}px`;
+    popup.style.maxWidth = `${popupW}px`;
     $('#level-4').appendChild(popup);
     this.activePopup = popup;
     setTimeout(() => {
@@ -1354,15 +1385,19 @@ const Level7 = {
   async showScene(id, duration, onShow, token) {
     if (token !== this.runToken) return;
     const scene = $(`#${id}`);
+    scene.style.opacity = '';
     scene.classList.add('active');
     if (onShow) onShow();
     if (!duration) return;
     await Utils.wait(duration);
     if (token !== this.runToken) return;
+    scene.style.transition = 'opacity 1400ms var(--ease)';
     scene.style.opacity = '0';
-    await Utils.wait(1200);
+    await Utils.wait(1450);
+    if (token !== this.runToken) return;
     scene.classList.remove('active');
     scene.style.opacity = '';
+    scene.style.transition = '';
   },
 
   createSnow() {
@@ -1495,6 +1530,21 @@ window.addEventListener('DOMContentLoaded', async () => {
   ParticleSystem.init();
   AudioManager.init();
   EasterEgg.init();
+
+  // Soft cursor glow - desktop only
+  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    const dot = document.createElement('div');
+    dot.className = 'cursor-dot';
+    dot.style.opacity = '0';
+    document.body.appendChild(dot);
+    document.addEventListener('mousemove', e => {
+      dot.style.left = `${e.clientX}px`;
+      dot.style.top = `${e.clientY}px`;
+      dot.style.opacity = '1';
+    }, { passive: true });
+    document.addEventListener('mouseleave', () => { dot.style.opacity = '0'; });
+    document.addEventListener('mouseenter', () => { dot.style.opacity = '1'; });
+  }
 
   // Birthday loading text
   if (Birthday.isToday()) {

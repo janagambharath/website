@@ -8,8 +8,10 @@
   <title>Unlocking Jilebi's World ✦</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://images.unsplash.com">
-  <link rel="preconnect" href="https://upload.wikimedia.org">
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Dancing+Script:wght@500;600&family=Courier+Prime&display=swap">
+  <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+  <link rel="preconnect" href="https://upload.wikimedia.org" crossorigin>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="improvements.css">
 </head>
@@ -213,7 +215,7 @@
 
   <section id="level-1" class="level vignette">
     <div class="level-bg level-bg-gate"></div>
-    <div class="l1-counter" id="l1-counter">&#10022; 0 / 10</div>
+    <div class="l1-counter" id="l1-counter" aria-live="polite" aria-atomic="true">&#10022; 0 / 10</div>
     <p class="level-instruction">Catch the stars. The gate only opens for attention.</p>
     <div class="l1-gate" aria-hidden="true">
       <svg viewBox="0 0 420 620" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -268,7 +270,7 @@
       <p>They quietly became a constellation.</p>
       <strong>JILEBI</strong>
     </div>
-    <div class="l4-progress" id="l4-progress">0 / 12 memories discovered</div>
+    <div class="l4-progress" id="l4-progress" aria-live="polite" aria-atomic="true">0 / 12 memories discovered</div>
   </section>
 
   <section id="level-5" class="level vignette">
@@ -305,7 +307,7 @@
         <span class="card-title">Which Jilebi Today?</span>
       </button>
     </div>
-    <div class="l5-progress" id="l5-progress">0 / 5 games played</div>
+    <div class="l5-progress" id="l5-progress" aria-live="polite" aria-atomic="true">0 / 5 games played</div>
   </section>
 
   <section id="level-6" class="level">
