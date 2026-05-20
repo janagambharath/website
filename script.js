@@ -12,12 +12,16 @@ const BirthdayWorld = {
   hiddenCat: 0,
   envelopeOpened: false,
   letterToken: 0,
+  birthday: new Date(2006, 4, 21, 0, 0, 0),
   heartTimer: null,
+  ageTimer: null,
 
   init() {
     this.hideLoaderWhenReady();
     this.setupReveals();
     this.setupMusic();
+    this.setupHeroTyping();
+    this.setupAgeCounter();
     this.setupHearts();
     this.setupNameGame();
     this.setupCatGame();
@@ -67,6 +71,59 @@ const BirthdayWorld = {
     toggles.forEach(button => {
       button.addEventListener('click', () => AudioGarden.toggle());
     });
+  },
+
+  setupHeroTyping() {
+    const target = $('#heroTyped');
+    if (!target) return;
+
+    const copy = [
+      'Some people become comfort unexpectedly.',
+      'You are one of those rare people.',
+      'Soft chaos. Safe smile. Full Jilebi energy.'
+    ].join('\n');
+
+    if (reducedMotion) {
+      target.textContent = copy;
+      return;
+    }
+
+    window.setTimeout(() => this.typeText(target, copy, 34), 1200);
+  },
+
+  setupAgeCounter() {
+    if (!$('#ageCounter')) return;
+    this.updateAgeCounter();
+    this.ageTimer = window.setInterval(() => this.updateAgeCounter(), 1000);
+  },
+
+  updateAgeCounter() {
+    const now = new Date();
+    const diff = Math.max(0, now.getTime() - this.birthday.getTime());
+    const totalSeconds = Math.floor(diff / 1000);
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const totalHours = Math.floor(totalMinutes / 60);
+    const totalDays = Math.floor(totalHours / 24);
+    const fullYears = this.completedYears(now);
+    const format = value => new Intl.NumberFormat('en-IN').format(value);
+
+    this.setText('#ageYears', format(fullYears));
+    this.setText('#ageDays', format(totalDays));
+    this.setText('#ageHours', format(totalHours));
+    this.setText('#ageMinutes', format(totalMinutes));
+    this.setText('#ageSeconds', format(totalSeconds));
+  },
+
+  completedYears(now) {
+    let years = now.getFullYear() - this.birthday.getFullYear();
+    const birthdayThisYear = new Date(now.getFullYear(), this.birthday.getMonth(), this.birthday.getDate());
+    if (now < birthdayThisYear) years -= 1;
+    return Math.max(0, years);
+  },
+
+  setText(selector, value) {
+    const el = $(selector);
+    if (el) el.textContent = value;
   },
 
   setupHearts() {
@@ -346,13 +403,13 @@ const BirthdayWorld = {
     });
   },
 
-  typeText(el, text, speed = 24, token = this.letterToken) {
+  typeText(el, text, speed = 24, token = null) {
     return new Promise(resolve => {
       el.textContent = '';
       let index = 0;
 
       const tick = () => {
-        if (token !== this.letterToken) {
+        if (token !== null && token !== this.letterToken) {
           resolve();
           return;
         }
@@ -401,18 +458,18 @@ const AudioGarden = {
   userPaused: false,
   autoplayBlocked: false,
   fadeTimer: null,
+  desiredVolume: 0.42,
 
   init() {
     this.audio = $('#bgm');
     if (!this.audio) return;
 
-    this.audio.volume = 0;
-    this.audio.muted = true;
+    this.audio.volume = this.desiredVolume;
+    this.audio.muted = false;
     this.audio.loop = true;
 
     this.audio.addEventListener('play', () => {
-      this.playing = true;
-      this.autoplayBlocked = false;
+      this.playing = !this.audio.paused;
       this.updateButtons();
     });
 
@@ -424,16 +481,19 @@ const AudioGarden = {
     this.tryAutoplay();
     window.addEventListener('load', () => this.tryAutoplay(), { once: true });
 
-    this.fadeTimer = window.setTimeout(() => this.fadeInAudibleMusic(), 1850);
+    this.fadeTimer = window.setTimeout(() => this.tryAutoplay(), 1850);
 
-    window.addEventListener('pointerdown', event => {
+    const unlock = event => {
       if (event.target.closest('#musicToggle, #heroMusic')) return;
-      if (!this.playing && !this.userPaused) this.start();
-    }, { once: true, passive: true });
+      if (!this.isAudible() && !this.userPaused) this.startAudible();
+    };
+
+    window.addEventListener('pointerdown', unlock, { passive: true });
+    window.addEventListener('touchstart', unlock, { passive: true });
   },
 
   async toggle() {
-    if (this.playing) {
+    if (this.isAudible()) {
       this.userPaused = true;
       clearTimeout(this.fadeTimer);
       this.stop();
@@ -441,35 +501,32 @@ const AudioGarden = {
     }
 
     this.userPaused = false;
-    await this.start();
+    await this.startAudible();
   },
 
   async tryAutoplay() {
-    if (!this.audio || this.playing || this.userPaused) return;
-    await this.start(true);
+    if (!this.audio || this.isAudible() || this.userPaused) return;
+    await this.startAudible(true);
+    if (!this.isAudible()) await this.startMutedFallback();
   },
 
-  async fadeInAudibleMusic() {
-    if (!this.audio || this.userPaused) return;
-
-    if (this.audio.paused) {
-      await this.start(true);
-    }
-
-    this.audio.muted = false;
-    if (this.audio.paused) {
-      await this.start(true);
-    }
-
-    if (this.audio.paused) {
-      this.autoplayBlocked = true;
+  async startMutedFallback() {
+    if (!this.audio || this.userPaused || !this.audio.paused) {
+      this.autoplayBlocked = !this.isAudible();
       this.updateButtons();
       return;
     }
 
-    this.autoplayBlocked = false;
-    this.playing = true;
-    this.rampVolume(0.42, 1800);
+    try {
+      this.audio.muted = true;
+      this.audio.volume = 0;
+      await this.audio.play();
+      this.playing = true;
+      this.autoplayBlocked = true;
+    } catch (error) {
+      this.playing = false;
+      this.autoplayBlocked = true;
+    }
     this.updateButtons();
   },
 
@@ -490,14 +547,15 @@ const AudioGarden = {
     }
   },
 
-  async start(isAutoplayAttempt = false) {
+  async startAudible(isAutoplayAttempt = false) {
     if (!this.audio) return;
     try {
-      if (!isAutoplayAttempt) this.audio.muted = false;
+      this.audio.muted = false;
+      this.audio.volume = isAutoplayAttempt ? this.desiredVolume : Math.max(this.audio.volume, 0.08);
       await this.audio.play();
-      this.playing = true;
-      this.autoplayBlocked = false;
-      if (!isAutoplayAttempt) this.rampVolume(0.42, 700);
+      this.playing = !this.audio.paused;
+      this.autoplayBlocked = !this.isAudible();
+      if (!isAutoplayAttempt) this.rampVolume(this.desiredVolume, 700);
     } catch (error) {
       this.playing = false;
       this.autoplayBlocked = isAutoplayAttempt;
@@ -510,6 +568,7 @@ const AudioGarden = {
     this.audio.muted = false;
     this.audio.pause();
     this.playing = false;
+    this.autoplayBlocked = false;
     this.updateButtons();
   },
 
@@ -522,8 +581,13 @@ const AudioGarden = {
       const progress = Math.min(1, (now - startedAt) / duration);
       this.audio.volume = start + (target - start) * progress;
       if (progress < 1) requestAnimationFrame(step);
+      else this.updateButtons();
     };
     requestAnimationFrame(step);
+  },
+
+  isAudible() {
+    return Boolean(this.audio && !this.audio.paused && !this.audio.muted && this.audio.volume > 0.02);
   },
 
   async chime(kind = 'soft') {
@@ -551,18 +615,19 @@ const AudioGarden = {
   updateButtons() {
     const musicToggle = $('#musicToggle');
     const heroMusic = $('#heroMusic');
+    const audible = this.isAudible();
     [musicToggle, heroMusic].forEach(button => {
       if (!button) return;
-      button.classList.toggle('is-on', this.playing);
+      button.classList.toggle('is-on', audible);
       button.classList.toggle('is-blocked', this.autoplayBlocked);
-      button.setAttribute('aria-pressed', String(this.playing));
+      button.setAttribute('aria-pressed', String(audible));
     });
     if (musicToggle) {
       const label = $('small', musicToggle);
-      if (label) label.textContent = this.playing ? 'on' : (this.autoplayBlocked ? 'tap' : 'music');
+      if (label) label.textContent = audible ? 'on' : (this.autoplayBlocked ? 'tap' : 'music');
     }
     if (heroMusic) {
-      heroMusic.textContent = this.playing ? 'music on' : (this.autoplayBlocked ? 'tap for music' : 'soft music');
+      heroMusic.textContent = audible ? 'music on' : (this.autoplayBlocked ? 'tap for music' : 'soft music');
     }
   }
 };

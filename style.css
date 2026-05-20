@@ -282,27 +282,37 @@ img {
 }
 
 .hero h1 {
-  margin: 0;
-  max-width: 12ch;
+  margin: 0.25rem 0 0;
+  max-width: 13ch;
   font-family: var(--font-display);
   font-size: 3rem;
-  line-height: 0.96;
+  line-height: 1.02;
   font-weight: 700;
 }
 
+.hero-heart {
+  display: inline-block;
+  margin-left: 0.42rem;
+  font-size: 0.74em;
+  transform: translateY(0.06em);
+}
+
 .hero-subtitle {
-  max-width: 20rem;
-  margin: 1rem 0 0;
+  max-width: 21rem;
+  min-height: 5.15rem;
+  margin: 1.25rem 0 0;
   color: rgba(255, 250, 246, 0.94);
   font-size: 1.03rem;
   font-weight: 700;
+  line-height: 1.42;
+  white-space: pre-line;
 }
 
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.7rem;
-  margin-top: 1.3rem;
+  margin-top: 1.55rem;
 }
 
 .primary-link,
@@ -364,6 +374,58 @@ img {
   color: var(--muted);
   font-size: 1rem;
   font-weight: 700;
+}
+
+.age-section {
+  padding-top: 3.8rem;
+  padding-bottom: 3.8rem;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 217, 137, 0.2), transparent 15rem),
+    linear-gradient(180deg, rgba(255, 235, 244, 0.92), rgba(255, 248, 238, 0.88));
+}
+
+.age-grid {
+  position: relative;
+  z-index: 12;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.72rem;
+  width: min(100%, 36rem);
+  margin: 1.35rem auto 0;
+}
+
+.age-tile {
+  min-width: 0;
+  padding: 0.9rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
+  text-align: center;
+  background: rgba(255, 250, 246, 0.68);
+  box-shadow: var(--soft-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.age-tile strong {
+  display: block;
+  color: #6c3d52;
+  font-family: var(--font-display);
+  font-size: clamp(1.28rem, 8vw, 2rem);
+  line-height: 1;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.age-tile span {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--rose-deep);
+  font-family: var(--font-hand);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.wide-age {
+  grid-column: 1 / -1;
 }
 
 .memory-grid {
@@ -702,9 +764,9 @@ img {
 .finale {
   min-height: 100svh;
   display: grid;
-  place-items: end center;
+  place-items: center;
   overflow: hidden;
-  padding: 5rem 1rem max(2rem, env(safe-area-inset-bottom) + 1rem);
+  padding: max(4rem, env(safe-area-inset-top) + 2rem) 1rem max(4rem, env(safe-area-inset-bottom) + 2rem);
   color: #fffaf6;
   isolation: isolate;
 }
