@@ -158,7 +158,7 @@ const AudioManager = {
 
   toggleMute() {
     this.muted = !this.muted;
-    this.button.textContent = this.muted ? 'off' : '\u266b';
+    this.button.textContent = this.muted ? '🔇' : '🔊';
     if (this.ready && this.masterGain) {
       this.masterGain.gain.setTargetAtTime(this.muted ? 0 : this.volume, this.ctx.currentTime, 0.22);
     }
@@ -263,15 +263,15 @@ const LevelManager = {
   current: -1,
   progress: {},
   key: 'jilebi_progress',
-  labels: ['Gate', 'Star Gate', 'Her Vibe', 'Dream Path', 'Memories', 'Chaos', 'Letter', 'Final Sky'],
+  labels: ['Gate 🌙', 'Star Gate ✨', 'Her Vibe 🌸', 'Dream Path 🏔️', 'Memories ⭐', 'Chaos 💕', 'Letter 🤍', 'Final Sky 🏮'],
   bridges: {
-    1: ['Level 1', 'The Star Gate', 'Catch enough light to open what is waiting.'],
-    2: ['Level 2', 'Her Vibe Map', 'Some people are not simple. She never was.'],
-    3: ['Level 3', 'Dream Path', 'Now the map moves from who she is to where her heart wants to go.'],
-    4: ['Level 4', 'Memory Constellation', 'The smallest moments are about to start glowing.'],
-    5: ['Level 5', 'Soft Chaos Room', 'A little play before the quiet part.'],
-    6: ['Level 6', 'The Letter', 'After all the gates, the words can finally arrive.'],
-    7: ['Level 7', 'Final Sky', 'No task now. Just watch.']
+    1: ['Level 1 ✨', 'The Star Gate', 'Catch enough light to open what is waiting.'],
+    2: ['Level 2 🌸', 'Her Vibe Map', 'Some people are not simple. She never was.'],
+    3: ['Level 3 🏔️', 'Dream Path', 'Now the map moves from who she is to where her heart wants to go.'],
+    4: ['Level 4 ⭐', 'Memory Constellation', 'The smallest moments are about to start glowing.'],
+    5: ['Level 5 💕', 'Soft Chaos Room', 'A little play before the quiet part.'],
+    6: ['Level 6 🤍', 'The Letter', 'After all the gates, the words can finally arrive.'],
+    7: ['Level 7 🏮', 'Final Sky', 'No task now. Just watch.']
   },
 
   init() {
@@ -395,8 +395,8 @@ const Level0 = {
     const lines = [
       ['#l0-line1', 'This is not a birthday page.', 52],
       ['#l0-line2', 'It is a little world built for one person.', 45],
-      ['#l0-line3', 'Jilebi', 72],
-      ['#l0-line4', 'Unlocking the quiet places she dreams about.', 38]
+      ['#l0-line3', 'Jilebi 🌸', 72],
+      ['#l0-line4', 'Unlocking the quiet places she dreams about 🤍', 38]
     ];
 
     for (const [selector, text, speed] of lines) {
@@ -570,52 +570,52 @@ const Level2 = {
   vibes: [
     {
       label: 'Introvert Peace',
-      symbol: '\u263e',
+      symbol: '🌙',
       quote: 'She is not distant. She is careful with where her energy goes.',
       img: IMG.room,
       color: 'rgba(143, 216, 210, 0.20)'
     },
     {
       label: 'Deep Thinker',
-      symbol: '\u2234',
+      symbol: '📖',
       quote: 'She hears meanings under the sentence, and feelings under the joke.',
       img: IMG.night,
       color: 'rgba(215, 183, 106, 0.22)'
     },
     {
       label: 'Soft Heart',
-      symbol: '\u25cc',
+      symbol: '🤍',
       quote: 'Soft does not mean easy to break. Sometimes it means still kind after everything.',
       img: IMG.tea,
       color: 'rgba(217, 139, 168, 0.24)'
     },
     {
       label: 'Quiet Strength',
-      symbol: '\u25b3',
+      symbol: '🏔️',
       quote: 'She carries things quietly, then still shows up with warmth.',
       img: IMG.mountains,
       color: 'rgba(143, 216, 210, 0.18)'
     },
     {
       label: 'Late Night Energy',
-      symbol: '\u2726',
+      symbol: '✨',
       quote: 'Reels, thoughts, songs, sudden honesty. The night knows her real language.',
       img: IMG.sky,
       color: 'rgba(215, 183, 106, 0.18)'
     },
     {
       label: 'Soft Chaos',
-      symbol: '\u223f',
+      symbol: '💕',
       quote: 'Teasing, blushing talks, overthinking, laughing. A whole weather system, somehow beautiful.',
       img: IMG.rain,
       color: 'rgba(242, 166, 90, 0.18)'
     }
   ],
   quotes: [
-    'quiet hearts, full skies',
-    'pahad wali peace',
-    'late-night thoughts',
-    'soft chaos, real comfort'
+    'quiet hearts 🤍 full skies',
+    'pahad wali peace 🏔️',
+    'late-night thoughts 🌙',
+    'soft chaos 💕 real comfort'
   ],
 
   init() {
@@ -1037,31 +1037,31 @@ const GameEngine = {
   moodQuestions: [
     {
       q: 'Your current inner weather is...',
-      opts: ['Rain on window', 'Mountain silence', 'Soft chaos', 'Midnight thoughts']
+      opts: ['🌧️ Rain on window', '🏔️ Mountain silence', '💕 Soft chaos', '🌙 Midnight thoughts']
     },
     {
       q: 'A perfect calm morning has...',
-      opts: ['Tea', 'No notifications', 'A view', 'A song on low']
+      opts: ['☕ Tea', '🔕 No notifications', '🏔️ A view', '🎵 A song on low']
     },
     {
       q: 'When feelings get heavy, you usually...',
-      opts: ['Go quiet', 'Overthink', 'Listen to songs', 'Need one safe person']
+      opts: ['🤫 Go quiet', '🌪️ Overthink', '🎧 Listen to songs', '🤍 Need one safe person']
     },
     {
       q: 'Your travel mood is...',
-      opts: ['Kedarnath calling', 'Any road, bas chalo', 'Mist and windows', 'Peaceful yatra']
+      opts: ['🏔️ Kedarnath calling', '🧭 Any road, bas chalo', '🌫️ Mist and windows', '✨ Peaceful yatra']
     },
     {
       q: 'What should this year bring first?',
-      opts: ['Strength', 'Peace', 'Travel', 'A lighter heart']
+      opts: ['💪 Strength', '🕊️ Peace', '🧳 Travel', '🤍 A lighter heart']
     }
   ],
   moodResults: [
-    ['Mountain Silence Mode', '\u25b3', 'Grounded outside, deep inside. The kind of calm that still has a thousand thoughts behind it.'],
-    ['Tea And Safe Talks Mode', '\u2615', 'Warm, honest, a little emotional. The kind of Jilebi who needs gentleness more than advice.'],
-    ['Soft Chaos Mode', '\u223f', 'A whole storm, but somehow still sweet. Laughing, thinking, feeling, all at once.'],
-    ['Yatra Heart Mode', '\u2726', 'Your soul wants roads, bells, mountains, and that feeling of being quietly protected.'],
-    ['Quiet Fire Mode', '\u25c7', 'Not loud. Not easy to read. But strong in a way that keeps showing up.']
+    ['Mountain Silence Mode', '🏔️', 'Grounded outside, deep inside. The kind of calm that still has a thousand thoughts behind it.'],
+    ['Tea And Safe Talks Mode', '☕', 'Warm, honest, a little emotional. The kind of Jilebi who needs gentleness more than advice.'],
+    ['Soft Chaos Mode', '💕', 'A whole storm, but somehow still sweet. Laughing, thinking, feeling, all at once.'],
+    ['Yatra Heart Mode', '✨', 'Your soul wants roads, bells, mountains, and that feeling of being quietly protected.'],
+    ['Quiet Fire Mode', '🤍', 'Not loud. Not easy to read. But strong in a way that keeps showing up.']
   ],
 
   init() {
@@ -1115,7 +1115,7 @@ const GameEngine = {
   startHearts() {
     clearInterval(this.heartTimer);
     this.heartsCount = 0;
-    $('#hearts-counter').textContent = `0 / ${this.heartsTarget}`;
+    $('#hearts-counter').textContent = `💕 0 / ${this.heartsTarget}`;
     $('#hearts-quote').style.display = 'none';
     $('#hearts-done-btn').style.display = 'none';
     const arena = $('#hearts-arena');
@@ -1126,7 +1126,7 @@ const GameEngine = {
       const dot = document.createElement('button');
       dot.type = 'button';
       dot.className = 'falling-heart';
-      dot.textContent = ['\u2726', '\u25cc', '\u25c7', '\u2736'][Utils.randInt(0, 3)];
+      dot.textContent = ['💕', '💖', '🤍', '🌸', '✨'][Utils.randInt(0, 4)];
       dot.style.left = `${Utils.rand(6, 82)}%`;
       dot.style.setProperty('--fall-dur', `${Utils.rand(3.2, 5.6)}s`);
       dot.onclick = () => {
@@ -1134,7 +1134,7 @@ const GameEngine = {
         dot.dataset.hit = '1';
         dot.style.animation = 'starBurst 280ms var(--ease) forwards';
         this.heartsCount += 1;
-        $('#hearts-counter').textContent = `${this.heartsCount} / ${this.heartsTarget}`;
+        $('#hearts-counter').textContent = `💕 ${this.heartsCount} / ${this.heartsTarget}`;
         Utils.vibrate([12]);
         AudioManager.tick();
         setTimeout(() => dot.remove(), 300);
@@ -1164,9 +1164,9 @@ const GameEngine = {
       'One tab open in the mind.',
       'Several tabs. Music also playing.',
       'Whole courtroom inside.',
-      'Jilebi Mode: every thought has a sequel.'
+      'Jilebi Mode: every thought has a sequel 🌪️'
     ];
-    const symbols = ['\u25b3', '\u00b7', '\u2234', '\u223f', '\u2736'];
+    const symbols = ['🏔️', '🤔', '💭', '🌪️', '✨'];
 
     slider.value = 0;
     label.textContent = 'Slide slowly...';
@@ -1196,7 +1196,7 @@ const GameEngine = {
     $('#cat-quote').style.display = 'none';
     $('#cat-done-btn').style.display = 'none';
     counter.textContent = '0 / 5';
-    cat.textContent = 'cat';
+    cat.textContent = '🐱';
 
     const move = () => {
       const rect = arena.getBoundingClientRect();
@@ -1210,7 +1210,7 @@ const GameEngine = {
       if (this.catCount >= 5) return;
       this.catCount += 1;
       counter.textContent = `${this.catCount} / 5`;
-      cat.textContent = ['caught', 'again', 'fast', 'almost', 'done'][this.catCount - 1];
+      cat.textContent = ['😺', '🙀', '😽', '🐾', '💕'][this.catCount - 1];
       cat.style.transform = 'scale(1.08)';
       setTimeout(() => { cat.style.transform = 'scale(1)'; }, 180);
       Utils.vibrate([12]);
@@ -1265,7 +1265,7 @@ const GameEngine = {
 
   showMoodQuestion() {
     const current = this.moodQuestions[this.moodQuestion];
-    $('#mood-title').textContent = 'Which Jilebi Today?';
+    $('#mood-title').textContent = 'Which Jilebi Today? ✨';
     $('#mood-sub').textContent = `Question ${this.moodQuestion + 1} of ${this.moodQuestions.length}`;
     $('#mood-question').textContent = current.q;
     const options = $('#mood-options');
@@ -1321,7 +1321,7 @@ const GameEngine = {
       setTimeout(() => {
         const piece = document.createElement('span');
         piece.className = 'confetti-piece';
-        piece.textContent = ['\u2726', '\u25cc', '\u25c7'][Utils.randInt(0, 2)];
+        piece.textContent = ['✨', '💕', '🌸', '🤍', '🏔️'][Utils.randInt(0, 4)];
         piece.style.left = `${Utils.rand(5, 95)}vw`;
         piece.style.setProperty('--fall-dur', `${Utils.rand(2.6, 4.8)}s`);
         document.body.appendChild(piece);
@@ -1333,7 +1333,7 @@ const GameEngine = {
 
 const Level6 = {
   letterLines: [
-    { text: 'Jilebi,', cls: 'greeting' },
+    { text: 'Jilebi 🌸,', cls: 'greeting' },
     { text: '', cls: 'blank' },
     { text: 'It is crazy how many memories can fit into a short time.', cls: '' },
     { text: 'Random reels. Late-night chats. Long calls that did not feel long while they were happening.', cls: '' },
@@ -1355,7 +1355,7 @@ const Level6 = {
     { text: 'Your quiet heart is already full of meaning.', cls: '' },
     { text: 'Your soft chaos is still soft. Your strength is still real.', cls: '' },
     { text: '', cls: 'blank' },
-    { text: 'Happy Birthday, jilebiii.', cls: 'sign-off' },
+    { text: 'Happy Birthday, jilebiii 🤍', cls: 'sign-off' },
     { text: 'Your vibe, your presence, and the memories we created will always mean a lot to me.', cls: 'sign-off' },
     { text: 'May this year bring peace, happiness, strength, and everything your heart is quietly wishing for.', cls: 'sign-off' }
   ],
@@ -1515,7 +1515,7 @@ const SecretMoments = {
     const overlay = document.createElement('div');
     overlay.className = 'pocket-sunrise';
     overlay.innerHTML = `
-      <h2>JILEBI</h2>
+      <h2>JILEBI 🌸</h2>
       <p>For one second, the night becomes a morning from her dream.</p>
       <p>21 / 05 / 2006</p>
     `;
@@ -1533,9 +1533,9 @@ const EasterEgg = {
   taps: 0,
   timer: null,
   messages: [
-    'Secret: calm mornings are already looking for her.',
-    'Secret: the moon remembered 21/05/2006.',
-    'Secret: some silences are full, not empty.'
+    'Secret: calm mornings are already looking for her 🌸',
+    'Secret: the moon remembered 21/05/2006 🌙',
+    'Secret: some silences are full, not empty 🤍'
   ],
 
   init() {
