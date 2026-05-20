@@ -300,6 +300,24 @@ const WishJar = {
 
     input.value = '';
     overlay.classList.add('visible');
+    if (!overlay.querySelector('.wish-bg-star')) {
+      for (let i = 0; i < 18; i += 1) {
+        const s = document.createElement('span');
+        s.className = 'wish-bg-star';
+        s.textContent = '\u00b7';
+        s.style.cssText = `
+          position: absolute;
+          left: ${Utils.rand(4, 96)}%;
+          top: ${Utils.rand(4, 96)}%;
+          color: rgba(248,239,227,${Utils.rand(0.08, 0.28).toFixed(2)});
+          font-size: ${Utils.rand(8, 22)}px;
+          pointer-events: none;
+          animation: quoteDrift ${Utils.rand(4, 9)}s ease-in-out infinite;
+          animation-delay: -${Utils.rand(0, 5)}s;
+        `;
+        overlay.appendChild(s);
+      }
+    }
     setTimeout(() => input.focus(), 500);
     const autoGrow = () => {
       input.style.height = 'auto';
@@ -371,7 +389,7 @@ const LevelManager = {
   ],
   bridges: {
     1: ['Level 1', 'The Star Gate', 'Catch enough light to open what is waiting.'],
-    2: ['Level 2', 'Her Vibe Map', 'Some people are not simple. She never was.'],
+    2: ['Level 2', 'Her Vibe Map', 'Six fragments. Each one a part she doesn\'t show everyone.'],
     3: ['Level 3', 'Dream Path', 'Now the map moves from who she is to where her heart wants to go.'],
     4: ['Level 4', 'Memory Constellation', 'The smallest moments are about to start glowing.'],
     5: ['Level 5', 'Soft Chaos Room', 'A little play before the quiet part.'],
@@ -537,7 +555,26 @@ const Level1 = {
       const d = $(s); if (d) d.style.animation = '';
     });
     this.updateCounter();
-    this.spawnLoop();
+    const instruction = $('#level-1 .level-instruction');
+    if (instruction) {
+      instruction.style.transition = 'opacity 700ms var(--ease)';
+      instruction.style.opacity = '0';
+    }
+    const bridge = document.createElement('div');
+    bridge.className = 'l1-emotional-bridge';
+    bridge.textContent = 'Stay a little. The gate waits for the ones who look closely.';
+    document.getElementById('level-1').appendChild(bridge);
+
+    const fadeTimer = setTimeout(() => {
+      bridge.style.opacity = '0';
+      if (instruction) instruction.style.opacity = '1';
+      const removeTimer = setTimeout(() => {
+        if (bridge.isConnected) bridge.remove();
+        if (this.active) this.spawnLoop();
+      }, 700);
+      this.timers.push(removeTimer);
+    }, 2200);
+    this.timers.push(fadeTimer);
   },
 
   cleanup() {
@@ -546,6 +583,10 @@ const Level1 = {
     this.timers = [];
     const c = $('#l1-stars-container');
     if (c) c.innerHTML = '';
+    const bridge = $('#level-1 .l1-emotional-bridge');
+    if (bridge) bridge.remove();
+    const instruction = $('#level-1 .level-instruction');
+    if (instruction) instruction.style.opacity = '';
   },
 
   updateCounter() { $('#l1-counter').textContent = `\u2726 ${this.caught} / ${this.target}`; },
@@ -1009,6 +1050,26 @@ const Level4 = {
     if (this.nameVisible) return;
     this.nameVisible = true;
     AudioManager.chime('unlock');
+    const songGhost = document.createElement('div');
+    songGhost.className = 'song-ghost';
+    songGhost.textContent = '\u266a the songs we didn\'t say out loud';
+    songGhost.style.cssText = `
+      position: absolute;
+      left: 50%;
+      top: calc(50% + 2.8rem);
+      transform: translateX(-50%);
+      color: rgba(217,139,168,0.52);
+      font-family: var(--font-script);
+      font-size: 0.95rem;
+      font-style: italic;
+      white-space: nowrap;
+      z-index: 9;
+      pointer-events: none;
+      opacity: 0;
+      animation: songFadeIn 2400ms 800ms var(--ease) forwards;
+    `;
+    document.getElementById('level-4').appendChild(songGhost);
+    setTimeout(() => songGhost.remove(), 6000);
     $('#l4-final-msg').classList.add('visible');
     await Utils.wait(3900);
     LevelManager.transition(5);
@@ -1262,7 +1323,15 @@ const GameEngine = {
 
   async unlock() {
     this.confetti();
-    await Utils.wait(1300);
+    await Utils.wait(2200);
+
+    const breath = document.createElement('div');
+    breath.className = 'chaos-breath';
+    breath.textContent = 'Now the soft part.';
+    document.getElementById('level-5').appendChild(breath);
+    requestAnimationFrame(() => breath.classList.add('visible'));
+    await Utils.wait(1800);
+
     LevelManager.transition(6);
   },
 
@@ -1321,11 +1390,20 @@ const Level6 = {
 
     continueBtn.classList.remove('visible');
     seal.classList.remove('visible');
+    paper.style.opacity = '0';
+    await Utils.wait(200);
+    paper.style.transition = 'opacity 600ms var(--ease)';
+    paper.style.opacity = '1';
     paper.innerHTML = '';
     paper.appendChild(seal);
 
+    paper.style.opacity = '1';
+    seal.classList.add('visible');
+    AudioManager.chime('deep');
+    await Utils.wait(620);
+
     pause.classList.add('visible');
-    await Utils.wait(1350);
+    await Utils.wait(1600);
     pause.classList.remove('visible');
     await Utils.wait(520);
 
@@ -1372,6 +1450,7 @@ const Level7 = {
     $('#rising-lantern').classList.remove('visible');
     $('#final-wish-line').textContent = '';
     $('#final-wish-line').classList.remove('visible');
+    $$('.final-rest-line').forEach(line => line.remove());
     this.run(token);
   },
 
@@ -1465,6 +1544,15 @@ const Level7 = {
     await Utils.wait(6500);
     if (token !== this.runToken) return;
     $('#final-restart-btn').classList.add('visible');
+
+    await Utils.wait(2600);
+    if (token !== this.runToken) return;
+
+    const rest = document.createElement('div');
+    rest.className = 'final-rest-line';
+    rest.textContent = '\u2726 \u2014 this world keeps the lights on for you \u2014 \u2726';
+    document.getElementById('scene-4').appendChild(rest);
+    requestAnimationFrame(() => rest.classList.add('visible'));
   }
 };
 

@@ -9,11 +9,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" as="style"
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Dancing+Script:wght@500;600&family=Courier+Prime&display=swap">
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Jost:wght@300;400;500&family=Pinyon+Script&family=DM+Mono:wght@300;400&display=swap">
   <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
   <link rel="preconnect" href="https://upload.wikimedia.org" crossorigin>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="improvements.css">
+  <link rel="stylesheet" href="level0-redesign.css">
+  <link rel="stylesheet" href="fonts-redesign.css">
 </head>
 <body>
   <canvas id="star-canvas" aria-hidden="true"></canvas>
@@ -174,8 +176,8 @@
   <div class="wish-overlay" id="wish-overlay">
     <div class="wish-card">
       <p class="wish-kicker">one last thing</p>
-      <h2 class="wish-title t-display">Make a birthday wish, Jilebi.</h2>
-      <p class="wish-sub t-script">Type it here. Let it rise to the sky.</p>
+      <h2 class="wish-title t-display">One last thing.</h2>
+      <p class="wish-sub t-script">What does nineteen wish for? Write it here. This world will hold it.</p>
       <textarea id="wish-input" class="wish-textarea t-script" maxlength="120" placeholder="I wish..." rows="3"></textarea>
       <div class="wish-actions">
         <button id="wish-release-btn" class="return-btn" type="button">Release it ✦</button>
@@ -187,11 +189,13 @@
 
   <!-- Levels -->
   <section id="level-0" class="level vignette">
+    <div class="l0-grain" aria-hidden="true"></div>
     <div class="l0-aurora"></div>
     <div class="l0-aurora l0-aurora-2"></div>
     <button class="l0-moon" id="l0-moon" type="button" aria-label="Moon secret"></button>
     <div class="l0-mist mist-one"></div>
     <div class="l0-mist mist-two"></div>
+    <div class="l0-mist mist-three"></div>
     <svg class="l0-mountains" viewBox="0 0 900 420" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
       <path d="M0 420 L90 210 L180 290 L270 150 L350 235 L450 110 L540 240 L625 165 L720 260 L820 175 L900 250 L900 420 Z" fill="#101925" opacity="0.82"/>
       <path d="M0 420 L80 300 L160 340 L250 255 L335 318 L430 230 L515 300 L610 235 L700 315 L790 260 L900 320 L900 420 Z" fill="#0b1118" opacity="0.94"/>
@@ -266,9 +270,10 @@
     </header>
     <canvas id="constellation-canvas"></canvas>
     <div class="l4-final-msg" id="l4-final-msg">
-      <h2>They were not random moments.</h2>
-      <p>They quietly became a constellation.</p>
+      <h2>None of it was random.</h2>
+      <p>All of it was her.</p>
       <strong>JILEBI</strong>
+      <span class="l4-final-sub">Every star here was a moment that chose to stay.</span>
     </div>
     <div class="l4-progress" id="l4-progress" aria-live="polite" aria-atomic="true">0 / 12 memories discovered</div>
   </section>
@@ -329,8 +334,8 @@
       <div class="scene-aurora"></div>
       <div id="snowfall-container" class="particle-layer"></div>
       <div class="scene-caption">
-        <p>Some dreams are not loud.</p>
-        <h2>They just keep calling.</h2>
+        <p>Kedarnath. Not if. Not someday.</p>
+        <h2>When the mountain is ready for her.</h2>
       </div>
     </div>
     <div class="cinematic-scene" id="scene-2">
@@ -367,5 +372,6 @@
 
   <script src="script.js"></script>
   <script src="improvements.js"></script>
+  <script src="level0-redesign.js"></script>
 </body>
 </html>

@@ -1,0 +1,194 @@
+/* Font redesign - loaded last */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Jost:wght@300;400;500&family=Pinyon+Script&family=DM+Mono:wght@300;400&display=swap');
+
+:root {
+  --font-display: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Jost', 'DM Sans', Arial, sans-serif;
+  --font-script: 'Pinyon Script', 'Dancing Script', cursive;
+  --font-mono: 'DM Mono', 'Courier Prime', monospace;
+}
+
+.t-display,
+.level-header h2,
+.mini-game-title,
+.bridge-title,
+.return-title,
+.reasons-title,
+.wish-title,
+.l4-final-msg h2,
+.l1-unlock-msg h2,
+.dest-card-title,
+.scene-caption h2,
+.final-quote-line,
+.vibe-card-label,
+.mood-result-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.letter-line.greeting,
+.l6-continue,
+.final-quote-line.rose-script {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.t-script,
+.letter-line,
+.letter-line.sign-off,
+.wish-sub,
+.wish-textarea,
+.floating-wish,
+.final-wish-line,
+.game-unlock-quote,
+.mood-result-desc,
+.vibe-card-quote,
+.dest-card-text,
+.ambient-quote,
+.secret-line,
+.easter-msg,
+.return-sub,
+.l1-unlock-msg p,
+.bridge-sub,
+#loading-screen p,
+.mini-game-sub,
+.overthink-label,
+.cat-quote-tail,
+.reason-text {
+  font-family: var(--font-script);
+  letter-spacing: 0.01em;
+}
+
+.letter-line { font-size: 1.08rem; line-height: 2; }
+.letter-line.greeting { font-size: 1.45rem; }
+.wish-sub { font-size: 0.98rem; }
+.wish-textarea { font-size: 1.22rem; }
+.ambient-quote { font-size: 0.88rem; }
+.mini-game-sub { font-size: 0.98rem; }
+.overthink-label { font-size: 1.12rem; }
+.reason-text { font-size: 1.05rem; }
+.game-unlock-quote { font-size: 1.02rem; }
+.cat-quote-tail { font-size: 0.9rem; }
+.bridge-sub { font-size: 1.18rem; }
+.return-sub { font-size: 1.08rem; }
+.easter-msg { font-size: 0.95rem; }
+.secret-line { font-size: 0.95rem; }
+
+.font-mono,
+.level-kicker,
+.overlay-kicker,
+.bridge-kicker,
+.secret-kicker,
+#chapter-indicator,
+.l1-counter,
+.l2-progress,
+.l4-progress,
+.l5-progress,
+.date-sigil,
+.birthday-badge,
+.reason-num,
+.mini-counter,
+.dest-hint,
+.dest-index,
+.final-quote-line.gold-small,
+.l4-final-msg strong,
+.image-credit,
+.mini-game-close,
+.pocket-sunrise h2 {
+  font-family: var(--font-mono);
+  font-weight: 300;
+  letter-spacing: 0.14em;
+}
+
+.typewriter-line {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.48rem;
+  letter-spacing: 0;
+}
+
+.typewriter-line.main-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-style: italic;
+  font-size: 2.6rem;
+  letter-spacing: 0;
+}
+
+.typewriter-line.sub-title {
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: 1.28rem;
+  letter-spacing: 0.01em;
+}
+
+.return-btn,
+.l0-cta,
+.restart-btn,
+.l6-continue {
+  font-family: var(--font-script);
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+}
+
+.return-btn.secondary {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+}
+
+.dest-name {
+  font-family: var(--font-display);
+  font-size: 1.32rem;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.vibe-orb-label {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+}
+
+.mood-option-btn,
+.house-choice-btn {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 0.76rem;
+}
+
+#loading-screen p {
+  font-family: var(--font-script);
+  font-size: 1.12rem;
+}
+
+.letter-pause p {
+  font-family: var(--font-script);
+  font-size: 1.28rem;
+}
+
+.cat-meme-caption {
+  font-family: Impact, 'Arial Black', system-ui, sans-serif;
+}
+
+@media (min-width: 760px) {
+  .typewriter-line { font-size: 1.72rem; }
+  .typewriter-line.main-title { font-size: 3.2rem; }
+  .typewriter-line.sub-title { font-size: 1.52rem; }
+  .letter-line { font-size: 1.12rem; }
+  .letter-line.greeting { font-size: 1.55rem; }
+}
+
+@media (max-width: 560px) {
+  .typewriter-line { font-size: 1.22rem; }
+  .typewriter-line.main-title { font-size: 2.1rem; }
+  .typewriter-line.sub-title { font-size: 1.08rem; }
+  .letter-line { font-size: 1.04rem; }
+  .letter-line.greeting { font-size: 1.32rem; }
+  .wish-textarea { font-size: 1.1rem; }
+  .reason-text { font-size: 0.95rem; }
+}

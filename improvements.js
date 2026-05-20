@@ -193,6 +193,16 @@ const ReasonsVault = {
           </div>`).join('')}
         <button class="reasons-close return-btn" type="button">Close ✦</button>
       </div>`;
+    const echo = document.createElement('div');
+    echo.className = 'her-echo';
+    echo.innerHTML = `
+      <span class="her-echo-kicker">heard somewhere in all those late nights</span>
+      <span class="her-echo-line">"why are you like this" \u{1F62D} (but she was smiling)</span>
+    `;
+    overlay.querySelector('.reasons-card').insertBefore(
+      echo,
+      overlay.querySelector('.reasons-close')
+    );
     overlay.querySelector('.reasons-close').onclick = () => this.hide();
     overlay.onclick = event => {
       if (event.target === overlay) this.hide();

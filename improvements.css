@@ -388,6 +388,31 @@
   margin: 1.8rem auto 0;
 }
 
+.her-echo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 1.6rem 0;
+  padding: 0.9rem 1rem;
+  border-left: 1px solid rgba(143,216,210,0.28);
+  background: rgba(143,216,210,0.04);
+}
+
+.her-echo-kicker {
+  color: rgba(143,216,210,0.52);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.her-echo-line {
+  color: rgba(248,239,227,0.78);
+  font-family: var(--font-script);
+  font-size: 1.12rem;
+  font-style: italic;
+}
+
 #reasons-trigger-btn {
   font-size: 0.68rem !important;
   white-space: nowrap;
