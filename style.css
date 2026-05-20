@@ -1148,10 +1148,45 @@ button { color: inherit; }
   letter-spacing: 0.02em;
 }
 
+.song-ghost {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 3rem);
+  z-index: 9;
+  width: min(34rem, calc(100% - 2rem));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  color: rgba(217,139,168,0.58);
+  font-family: var(--font-script);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  animation: songFadeIn 5200ms 760ms var(--ease) forwards;
+}
+
+.song-ghost span {
+  font-size: 1.05rem;
+  font-style: italic;
+  text-shadow: 0 0 1.2rem rgba(217,139,168,0.18);
+}
+
+.song-ghost strong {
+  color: rgba(215,183,106,0.66);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 300;
+  line-height: 1.7;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-shadow: 0 0 1.2rem rgba(215,183,106,0.2);
+}
+
 @keyframes songFadeIn {
   from { opacity: 0; transform: translateX(-50%) translateY(0.5rem); }
-  30% { opacity: 0.52; }
-  70% { opacity: 0.52; }
+  24% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  74% { opacity: 1; transform: translateX(-50%) translateY(0); }
   to { opacity: 0; transform: translateX(-50%) translateY(-0.5rem); }
 }
 

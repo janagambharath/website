@@ -235,6 +235,39 @@ const AudioManager = {
         osc.start(now + start); osc.stop(now + start + dur + 0.1);
       });
     } catch (err) {}
+  },
+
+  playHindiMotif() {
+    if (!this.ready || this.muted || !this.masterGain) return;
+    try {
+      const now = this.ctx.currentTime + 0.2;
+      const notes = [
+        [293.66, 0, 0.34],
+        [329.63, 0.32, 0.42],
+        [392, 0.78, 0.52],
+        [440, 1.28, 0.38],
+        [392, 1.7, 0.56],
+        [329.63, 2.28, 0.72]
+      ];
+      notes.forEach(([freq, start, dur], index) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const pan = this.ctx.createStereoPanner();
+        osc.type = index % 2 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freq, now + start);
+        osc.frequency.linearRampToValueAtTime(freq * 1.004, now + start + dur * 0.5);
+        gain.gain.setValueAtTime(0, now + start);
+        gain.gain.linearRampToValueAtTime(0.055, now + start + 0.08);
+        gain.gain.setValueAtTime(0.055, now + start + Math.max(0.1, dur - 0.12));
+        gain.gain.linearRampToValueAtTime(0, now + start + dur);
+        pan.pan.value = (index - 2.5) * 0.08;
+        osc.connect(gain);
+        gain.connect(pan);
+        pan.connect(this.masterGain);
+        osc.start(now + start);
+        osc.stop(now + start + dur + 0.05);
+      });
+    } catch (err) {}
   }
 };
 
@@ -1056,28 +1089,17 @@ const Level4 = {
     if (this.nameVisible) return;
     this.nameVisible = true;
     AudioManager.chime('unlock');
+    AudioManager.playHindiMotif();
     const songGhost = document.createElement('div');
     songGhost.className = 'song-ghost';
-    songGhost.textContent = '\u266a the songs we didn\'t say out loud';
-    songGhost.style.cssText = `
-      position: absolute;
-      left: 50%;
-      top: calc(50% + 2.8rem);
-      transform: translateX(-50%);
-      color: rgba(217,139,168,0.52);
-      font-family: var(--font-script);
-      font-size: 0.95rem;
-      font-style: italic;
-      white-space: nowrap;
-      z-index: 9;
-      pointer-events: none;
-      opacity: 0;
-      animation: songFadeIn 2400ms 800ms var(--ease) forwards;
+    songGhost.innerHTML = `
+      <span>\u266a Hindi songs for the quiet parts</span>
+      <strong>Kun Faya Kun · Iktara · Phir Se Ud Chala · Safarnama · Ilahi</strong>
     `;
     document.getElementById('level-4').appendChild(songGhost);
-    setTimeout(() => songGhost.remove(), 6000);
+    setTimeout(() => songGhost.remove(), 7200);
     $('#l4-final-msg').classList.add('visible');
-    await Utils.wait(3900);
+    await Utils.wait(4700);
     LevelManager.transition(5);
   }
 };
