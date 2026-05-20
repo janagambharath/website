@@ -482,6 +482,7 @@ const Level0 = {
     if (this.token) this.token.cancelled = true;
     this.token = { cancelled: false };
     $$('.typewriter-line').forEach(line => { line.textContent = ''; line.style.opacity = '0'; });
+    $('#l0-candle').classList.remove('name-hidden');
     $('#l0-cta').style.opacity = '0';
     $('#date-sigil').classList.remove('visible');
     $('#birthday-badge').classList.remove('visible');
@@ -513,6 +514,11 @@ const Level0 = {
     ];
 
     for (const [selector, text, speed] of lines) {
+      if (selector === '#l0-line3') {
+        $('#l0-candle').classList.add('name-hidden');
+        await Utils.wait(420);
+        if (token.cancelled || LevelManager.current !== 0) return;
+      }
       await Utils.typewriter($(selector), text, speed, token);
       await Utils.wait(360);
       if (token.cancelled || LevelManager.current !== 0) return;

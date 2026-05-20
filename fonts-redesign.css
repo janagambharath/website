@@ -1,11 +1,11 @@
 /* Font redesign - loaded last */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Jost:wght@300;400;500&family=Pinyon+Script&family=DM+Mono:wght@300;400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Jost:wght@300;400;500&family=Dancing+Script:wght@500;600&family=DM+Mono:wght@300;400&display=swap');
 
 :root {
   --font-display: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
   --font-body: 'Jost', 'DM Sans', Arial, sans-serif;
-  --font-script: 'Pinyon Script', 'Dancing Script', cursive;
+  --font-script: 'Dancing Script', cursive;
   --font-mono: 'DM Mono', 'Courier Prime', monospace;
 }
 
@@ -110,19 +110,38 @@
   letter-spacing: 0;
 }
 
+.l0-text {
+  z-index: 8;
+  pointer-events: none;
+}
+
+.l0-candle {
+  z-index: 5;
+}
+
+.l0-candle.name-hidden {
+  opacity: 0 !important;
+  transform: translateX(-50%) translateY(0.65rem) scale(0.92) !important;
+  pointer-events: none;
+  transition:
+    opacity 520ms var(--ease),
+    transform 520ms var(--ease);
+}
+
 .typewriter-line.main-title {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-style: italic;
-  font-size: 2.6rem;
-  letter-spacing: 0;
+  font-family: var(--font-script);
+  font-weight: 600;
+  font-style: normal;
+  font-size: 3rem;
+  letter-spacing: 0.01em;
 }
 
 .typewriter-line.sub-title {
   font-family: var(--font-script);
-  font-weight: 400;
-  font-size: 1.28rem;
-  letter-spacing: 0.01em;
+  font-weight: 600;
+  font-size: 1.34rem;
+  letter-spacing: 0;
+  text-shadow: 0 0 1.2rem rgba(143,216,210,0.38);
 }
 
 .return-btn,
@@ -177,7 +196,7 @@
 
 @media (min-width: 760px) {
   .typewriter-line { font-size: 1.72rem; }
-  .typewriter-line.main-title { font-size: 3.2rem; }
+  .typewriter-line.main-title { font-size: 3.65rem; }
   .typewriter-line.sub-title { font-size: 1.52rem; }
   .letter-line { font-size: 1.12rem; }
   .letter-line.greeting { font-size: 1.55rem; }
@@ -185,7 +204,7 @@
 
 @media (max-width: 560px) {
   .typewriter-line { font-size: 1.22rem; }
-  .typewriter-line.main-title { font-size: 2.1rem; }
+  .typewriter-line.main-title { font-size: 2.55rem; }
   .typewriter-line.sub-title { font-size: 1.08rem; }
   .letter-line { font-size: 1.04rem; }
   .letter-line.greeting { font-size: 1.32rem; }
