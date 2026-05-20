@@ -3,376 +3,179 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#05060a">
-  <meta name="description" content="Unlocking Jilebi's World - a cinematic birthday journey.">
-  <title>Unlocking Jilebi's World ✦</title>
+  <meta name="theme-color" content="#ffd7e7">
+  <meta name="description" content="A soft cinematic birthday gift for Jilebi and Anjali.">
+  <title>Happy Birthday Jilebi 💗</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" as="style"
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Jost:wght@300;400;500&family=Dancing+Script:wght@500;600&family=DM+Mono:wght@300;400&display=swap">
-  <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
-  <link rel="preconnect" href="https://upload.wikimedia.org" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Nunito:wght@400;500;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="preload" href="assets/dreamy-jilebi-cats.webp" as="image" type="image/webp">
+  <link rel="preload" href="assets/golden-hour.mpeg" as="audio" type="audio/mpeg">
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="improvements.css">
-  <link rel="stylesheet" href="level0-redesign.css">
-  <link rel="stylesheet" href="fonts-redesign.css">
-  <link rel="stylesheet" href="level2-vivid.css">
+  <script src="script.js" defer></script>
 </head>
 <body>
-  <canvas id="star-canvas" aria-hidden="true"></canvas>
-  <div id="shooting-stars-container" aria-hidden="true"></div>
+  <audio id="bgm" src="assets/golden-hour.mpeg" preload="auto" loop autoplay muted playsinline></audio>
 
-  <div id="transition-overlay" aria-hidden="true">
-    <div class="bridge-copy">
-      <div class="bridge-kicker" id="bridge-kicker">Level unlocked</div>
-      <div class="bridge-title" id="bridge-title"></div>
-      <div class="bridge-sub" id="bridge-sub"></div>
+  <div class="loader" id="loader" aria-live="polite">
+    <div class="paw-loader" aria-hidden="true">
+      <span class="toe toe-one"></span>
+      <span class="toe toe-two"></span>
+      <span class="toe toe-three"></span>
+      <span class="toe toe-four"></span>
+      <span class="paw-pad"></span>
     </div>
+    <p>Unlocking Jilebi’s World ✦</p>
   </div>
 
-  <div id="loading-screen">
-    <div class="loading-star" aria-hidden="true">&#10022;</div>
-    <p id="loading-text">Opening Jilebi's world</p>
-  </div>
+  <div class="heart-layer" id="heartLayer" aria-hidden="true"></div>
 
-  <div id="chapter-indicator">
-    <span id="chapter-label">Gate</span>
-    <span class="chapter-dot"></span>
-    <span>Level <span id="chapter-num">0</span> / 7</span>
-  </div>
+  <button class="music-toggle" id="musicToggle" type="button" aria-label="Toggle dreamy background music" aria-pressed="false">
+    <span aria-hidden="true">♪</span>
+    <small>music</small>
+  </button>
 
-  <button id="mute-btn" type="button" aria-label="Toggle ambient sound">&#9835;</button>
-  <button id="easter-moon" type="button" aria-label="Hidden moon">&#9790;</button>
-
-  <div class="easter-msg" id="easter-msg">
-    Some people feel like moonlight: quiet, steady, and missed the second they disappear.
-  </div>
-
-  <div id="secret-vault" aria-hidden="true">
-    <button id="secret-close" type="button" aria-label="Close secret">x</button>
-    <p class="secret-kicker">secret found</p>
-    <p class="secret-line">21/05/2006 was not just a date. It was the start of a person who would dream of mountains, peace, and a life that finally feels calm.</p>
-  </div>
-
-  <div id="return-screen">
-    <div class="return-title t-display">Welcome back, Jilebi</div>
-    <div class="return-sub">Your unlocked world kept the lights on.</div>
-    <div class="return-btns">
-      <button class="return-btn" id="continue-btn" type="button">Continue Journey</button>
-      <button class="return-btn secondary" id="restart-btn-return" type="button">Start Over</button>
-    </div>
-  </div>
-
-  <!-- Vibe Card Overlay -->
-  <div class="vibe-card-overlay" id="vibe-card-overlay">
-    <article class="vibe-card">
-      <button class="overlay-close vibe-card-close" id="vibe-card-close" type="button" aria-label="Close vibe">x</button>
-      <img class="vibe-card-img" id="vibe-card-img" src="" alt="" loading="lazy">
-      <p class="overlay-kicker" id="vibe-card-kicker">fragment unlocked</p>
-      <h3 class="vibe-card-label t-display" id="vibe-card-label"></h3>
-      <p class="vibe-card-quote t-script" id="vibe-card-quote"></p>
-    </article>
-  </div>
-
-  <!-- Destination Card Overlay -->
-  <div class="dest-card-overlay" id="dest-card-overlay">
-    <article class="dest-card">
-      <button class="overlay-close dest-card-close" id="dest-card-close" type="button" aria-label="Close dream">x</button>
-      <img class="dest-card-img" id="dest-card-img" src="" alt="" loading="lazy">
-      <p class="overlay-kicker" id="dest-card-kicker">dream marked on the map</p>
-      <h3 class="dest-card-title t-display" id="dest-card-title"></h3>
-      <p class="dest-card-text t-script" id="dest-card-text"></p>
-    </article>
-  </div>
-
-  <!-- Mini Games -->
-  <div class="mini-game-overlay" id="game-hearts">
-    <button class="mini-game-close" type="button" onclick="window.GameEngine.closeMiniGame('hearts')" aria-label="Close game">x</button>
-    <div class="mini-game-title">Catch the Soft Things</div>
-    <div class="mini-game-sub">Catch 12 before they float away</div>
-    <div id="hearts-counter" class="mini-counter">0 / 12</div>
-    <div id="hearts-arena" class="mini-arena" aria-label="Catch floating lights"></div>
-    <div class="game-unlock-quote" id="hearts-quote">Soft hearts do not need to become hard to survive.</div>
-    <button class="return-btn" id="hearts-done-btn" type="button" onclick="window.GameEngine.markDone('hearts')">Keep Going</button>
-  </div>
-
-  <div class="mini-game-overlay" id="game-overthink">
-    <button class="mini-game-close" type="button" onclick="window.GameEngine.closeMiniGame('overthink')" aria-label="Close game">x</button>
-    <div class="mini-game-title">Overthinking Meter</div>
-    <div class="mini-game-sub">Slide until it tells the truth</div>
-    <div class="mountain-char" id="mountain-char" aria-hidden="true">&#9968;</div>
-    <input type="range" class="overthink-slider" id="overthink-slider" min="0" max="4" value="0" step="1" aria-label="Overthinking level">
-    <div class="overthink-label" id="overthink-label">Slide slowly...</div>
-    <div class="game-unlock-quote" id="overthink-quote">Your mind is not too much. It is just always trying to protect something soft.</div>
-    <button class="return-btn" id="overthink-done-btn" type="button" onclick="window.GameEngine.markDone('overthink')">Keep Going</button>
-  </div>
-
-  <div class="mini-game-overlay" id="game-cat">
-    <button class="mini-game-close" type="button" onclick="window.GameEngine.closeMiniGame('cat')" aria-label="Close game">x</button>
-    <div class="mini-game-title">Tap the Cat</div>
-    <div class="mini-game-sub">Five taps. No overthinking.</div>
-    <div id="cat-counter" class="mini-counter">0 / 5</div>
-    <div id="cat-arena" class="mini-arena square-arena">
-      <button class="game-cat" id="game-cat-emoji" type="button" aria-label="Tap the cat">🐈</button>
-    </div>
-    <div class="game-unlock-quote" id="cat-quote">Some chaos is allowed. Especially the tiny, harmless kind.</div>
-    <button class="return-btn" id="cat-done-btn" type="button" onclick="window.GameEngine.markDone('cat')">Keep Going</button>
-  </div>
-
-  <div class="mini-game-overlay" id="game-house">
-    <button class="mini-game-close" type="button" onclick="window.GameEngine.closeMiniGame('house')" aria-label="Close game">x</button>
-    <div class="mini-game-title">Build the Pahad Ghar</div>
-    <div class="mini-game-sub">Choose the morning she deserves</div>
-    <div class="house-builder">
-      <div class="house-choice-group">
-        <h4>Roofline</h4>
-        <div class="house-choices">
-          <button class="house-choice-btn" type="button" data-group="roof" data-val="Snow roof">Snow roof</button>
-          <button class="house-choice-btn" type="button" data-group="roof" data-val="Pine roof">Pine roof</button>
-          <button class="house-choice-btn" type="button" data-group="roof" data-val="Cloud roof">Cloud roof</button>
+  <main>
+    <section class="hero section" id="hero" aria-label="Birthday greeting for Jilebi">
+      <picture>
+        <source srcset="assets/dreamy-jilebi-cats.webp" type="image/webp">
+        <img class="hero-art" src="assets/dreamy-jilebi-cats.png" alt="Two cats watching a pastel sky with lanterns and heart lights.">
+      </picture>
+      <div class="hero-shade" aria-hidden="true"></div>
+      <div class="hero-copy">
+        <p class="soft-label">a tiny world, made only for you</p>
+        <h1>Happy Birthday<br>Jilebi 💗</h1>
+        <p class="hero-subtitle">Some people become comfort unexpectedly.</p>
+        <div class="hero-actions">
+          <a class="primary-link" href="#memories">Open memories ✦</a>
+          <button class="quiet-button" id="heroMusic" type="button">soft music</button>
         </div>
       </div>
-      <div class="house-choice-group">
-        <h4>Window View</h4>
-        <div class="house-choices">
-          <button class="house-choice-btn" type="button" data-group="view" data-val="Sunrise valley">Sunrise valley</button>
-          <button class="house-choice-btn" type="button" data-group="view" data-val="Night sky">Night sky</button>
-          <button class="house-choice-btn" type="button" data-group="view" data-val="Rain and mist">Rain and mist</button>
+      <div class="scroll-whisper" aria-hidden="true">♡</div>
+    </section>
+
+    <section class="section memories" id="memories" aria-labelledby="memoryTitle">
+      <div class="section-copy reveal">
+        <p class="soft-label">things that somehow stayed</p>
+        <h2 id="memoryTitle">Little proofs of her</h2>
+        <p>Not big dramatic moments. Just the small ones that quietly became home.</p>
+      </div>
+
+      <div class="memory-grid">
+        <article class="memory-card reveal">
+          <span aria-hidden="true">😭</span>
+          <h3>Your smile = danger 😭</h3>
+          <p>The kind that can ruin a normal day by making it too soft.</p>
+        </article>
+        <article class="memory-card reveal">
+          <span aria-hidden="true">🌸</span>
+          <h3>Hindi classes by you</h3>
+          <p>Patient, funny, slightly strict, and somehow cute about it.</p>
+        </article>
+        <article class="memory-card reveal">
+          <span aria-hidden="true">🌙</span>
+          <h3>Late night talks</h3>
+          <p>When the world became quiet enough for real things to be said.</p>
+        </article>
+        <article class="memory-card reveal">
+          <span aria-hidden="true">🎶</span>
+          <h3>Songs you sang</h3>
+          <p>A voice turning an ordinary moment into something worth saving.</p>
+        </article>
+        <article class="memory-card reveal wide-card">
+          <span aria-hidden="true">🐾</span>
+          <h3>Mentally tired but still cute</h3>
+          <p>Even on heavy days, there is this softness in you that refuses to disappear.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section games" id="games" aria-labelledby="gamesTitle">
+      <div class="section-copy reveal">
+        <p class="soft-label">tiny games, tiny smiles</p>
+        <h2 id="gamesTitle">Soft chaos room</h2>
+        <p>Nothing difficult. Just a few little taps for the girl this world was made for.</p>
+      </div>
+
+      <article class="game-card reveal" id="nameGame">
+        <div class="game-heading">
+          <span class="game-icon" aria-hidden="true">✦</span>
+          <div>
+            <p class="soft-label">game 1</p>
+            <h3>Reveal Her Name</h3>
+          </div>
         </div>
-      </div>
-      <div class="house-choice-group">
-        <h4>Morning Mood</h4>
-        <div class="house-choices">
-          <button class="house-choice-btn" type="button" data-group="mood" data-val="Tea and silence">Tea and silence</button>
-          <button class="house-choice-btn" type="button" data-group="mood" data-val="Songs low">Songs low</button>
-          <button class="house-choice-btn" type="button" data-group="mood" data-val="No hurry">No hurry</button>
+        <div class="name-slots" id="nameSlots" aria-label="Unlocked name letters"></div>
+        <div class="letter-tray" id="letterTray" aria-label="Letter choices"></div>
+        <p class="game-note" id="nameNote" aria-live="polite">The real name is hiding in the softest order.</p>
+      </article>
+
+      <article class="game-card reveal" id="catGame">
+        <div class="game-heading">
+          <span class="game-icon" aria-hidden="true">🐱</span>
+          <div>
+            <p class="soft-label">game 2</p>
+            <h3>Find The Cat</h3>
+          </div>
         </div>
+        <div class="cat-board" id="catBoard" aria-label="Find the hidden cat"></div>
+        <p class="game-note" id="catNote" aria-live="polite">A suspiciously emotional cat is hiding somewhere.</p>
+      </article>
+
+      <article class="game-card reveal" id="moodGame">
+        <div class="game-heading">
+          <span class="game-icon" aria-hidden="true">♡</span>
+          <div>
+            <p class="soft-label">game 3</p>
+            <h3>Choose Your Mood</h3>
+          </div>
+        </div>
+        <div class="mood-buttons">
+          <button type="button" data-mood="sleepy">sleepy cat</button>
+          <button type="button" data-mood="angry">angry cat</button>
+          <button type="button" data-mood="cute">cute cat</button>
+          <button type="button" data-mood="emotional">emotional cat</button>
+        </div>
+        <p class="mood-result" id="moodResult" aria-live="polite">Pick one and let the cat committee respond.</p>
+      </article>
+    </section>
+
+    <section class="section secret" id="secret" aria-labelledby="secretTitle">
+      <div class="section-copy reveal">
+        <p class="soft-label">locked for the birthday girl</p>
+        <h2 id="secretTitle">One quiet envelope</h2>
+        <p>Some words are better opened slowly.</p>
       </div>
-      <div class="house-preview" id="house-preview">
-        <div class="house-sky"></div>
-        <div class="house-peak"></div>
-        <div class="house-body"></div>
-        <p id="house-preview-text">Choose all three pieces</p>
-      </div>
-      <div class="game-unlock-quote" id="house-quote">One day, this will not be a game. It will be a window, tea, and a quiet morning.</div>
-      <button class="return-btn" id="house-done-btn" type="button" onclick="window.GameEngine.markDone('house')">Keep Going</button>
-    </div>
-  </div>
 
-  <div class="mini-game-overlay" id="game-mood">
-    <button class="mini-game-close" type="button" onclick="window.GameEngine.closeMiniGame('mood')" aria-label="Close game">x</button>
-    <div class="mini-game-title" id="mood-title">Which Jilebi Today?</div>
-    <div class="mini-game-sub" id="mood-sub">Question 1 of 5</div>
-    <div class="mood-question" id="mood-question"></div>
-    <div class="mood-options" id="mood-options"></div>
-    <div class="mood-result-card" id="mood-result">
-      <div class="mood-result-symbol" id="mood-result-symbol"></div>
-      <div class="mood-result-title t-display" id="mood-result-title"></div>
-      <div class="mood-result-desc t-script" id="mood-result-desc"></div>
-    </div>
-    <button class="return-btn" id="mood-done-btn" type="button" onclick="window.GameEngine.markDone('mood')">Keep Going</button>
-  </div>
-
-  <!-- Wish Jar Overlay (NEW) -->
-  <div class="wish-overlay" id="wish-overlay">
-    <div class="wish-card">
-      <p class="wish-kicker">one last thing</p>
-      <h2 class="wish-title t-display">One last thing.</h2>
-      <p class="wish-sub t-script">What does nineteen wish for? Write it here. This world will hold it.</p>
-      <textarea id="wish-input" class="wish-textarea t-script" maxlength="120" placeholder="I wish..." rows="3"></textarea>
-      <div class="wish-actions">
-        <button id="wish-release-btn" class="return-btn" type="button">Release it ✦</button>
-        <button id="wish-skip-btn" class="return-btn secondary" type="button">Skip</button>
-      </div>
-    </div>
-  </div>
-  <div class="floating-wish" id="floating-wish"></div>
-
-  <!-- Levels -->
-  <section id="level-0" class="level vignette">
-    <div class="l0-grain" aria-hidden="true"></div>
-    <div class="l0-aurora"></div>
-    <div class="l0-aurora l0-aurora-2"></div>
-    <button class="l0-moon" id="l0-moon" type="button" aria-label="Moon secret"></button>
-    <div class="l0-mist mist-one"></div>
-    <div class="l0-mist mist-two"></div>
-    <div class="l0-mist mist-three"></div>
-    <svg class="l0-mountains" viewBox="0 0 900 420" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-      <path d="M0 420 L90 210 L180 290 L270 150 L350 235 L450 110 L540 240 L625 165 L720 260 L820 175 L900 250 L900 420 Z" fill="#101925" opacity="0.82"/>
-      <path d="M0 420 L80 300 L160 340 L250 255 L335 318 L430 230 L515 300 L610 235 L700 315 L790 260 L900 320 L900 420 Z" fill="#0b1118" opacity="0.94"/>
-      <path d="M0 420 C120 380 210 405 330 370 C445 335 565 405 680 362 C770 330 840 358 900 342 L900 420 Z" fill="#05060a"/>
-    </svg>
-    <div class="l0-candle" id="l0-candle" role="button" tabindex="0" aria-label="Blow out the candle">
-      <div class="l0-flame"></div>
-      <div class="l0-wick"></div>
-      <div class="l0-candle-body"></div>
-    </div>
-    <div class="l0-text">
-      <span class="typewriter-line" id="l0-line1"></span>
-      <span class="typewriter-line" id="l0-line2"></span>
-      <span class="typewriter-line main-title" id="l0-line3"></span>
-      <span class="typewriter-line sub-title" id="l0-line4"></span>
-    </div>
-    <button class="l0-cta shimmer-btn" id="l0-cta" type="button">Open the gate</button>
-    <div class="date-sigil" id="date-sigil">21 / 05 / 2006</div>
-    <div class="birthday-badge" id="birthday-badge">🎂 Happy 19th Birthday</div>
-  </section>
-
-  <section id="level-1" class="level vignette">
-    <div class="level-bg level-bg-gate"></div>
-    <div class="l1-counter" id="l1-counter" aria-live="polite" aria-atomic="true">&#10022; 0 / 10</div>
-    <p class="level-instruction">Catch the stars. The gate only opens for attention.</p>
-    <div class="l1-gate" aria-hidden="true">
-      <svg viewBox="0 0 420 620" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M45 610 V205 Q210 35 375 205 V610" stroke="rgba(215,183,106,.35)" stroke-width="2"/>
-        <rect x="70" y="210" width="75" height="395" fill="rgba(9,14,22,.9)" stroke="rgba(215,183,106,.28)"/>
-        <rect x="275" y="210" width="75" height="395" fill="rgba(9,14,22,.9)" stroke="rgba(215,183,106,.28)"/>
-        <rect id="gate-door-left" x="145" y="210" width="65" height="395" fill="#070a10" stroke="rgba(215,183,106,.22)" style="transform-origin:145px 405px"/>
-        <rect id="gate-door-right" x="210" y="210" width="65" height="395" fill="#070a10" stroke="rgba(215,183,106,.22)" style="transform-origin:275px 405px"/>
-        <path d="M202 138 C205 205 200 340 207 605 M218 138 C214 245 222 360 214 605" stroke="rgba(215,183,106,.18)"/>
-      </svg>
-    </div>
-    <div class="l1-golden-light" id="l1-golden-light"></div>
-    <div id="l1-stars-container" aria-hidden="true"></div>
-    <div class="l1-unlock-msg" id="l1-unlock-msg">
-      <h2>Gate opened.</h2>
-      <p>Not because it was easy. Because she stayed curious.</p>
-    </div>
-  </section>
-
-  <section id="level-2" class="level vignette">
-    <div class="l2-bg-img"></div>
-    <header class="level-header l2-header">
-      <p class="level-kicker">Level 2</p>
-      <h2>Her Vibe Map</h2>
-      <p id="l2-header-sub">Unlock the fragments people miss when they only look quickly.</p>
-    </header>
-    <div class="l2-orb-container" id="l2-orb-container"></div>
-    <div class="l2-progress" id="l2-progress">0 / 6 fragments unlocked</div>
-  </section>
-
-  <section id="level-3" class="level vignette">
-    <div class="l3-bg-img"></div>
-    <header class="level-header l3-header">
-      <p class="level-kicker">Level 3</p>
-      <h2>Dream Path</h2>
-      <p id="l3-header-sub">A map of the life her heart keeps describing.</p>
-    </header>
-    <div class="dream-route" aria-hidden="true"></div>
-    <div class="l3-destinations" id="l3-destinations"></div>
-  </section>
-
-  <section id="level-4" class="level">
-    <div class="memory-bg"></div>
-    <header class="level-header l4-header">
-      <p class="level-kicker">Level 4</p>
-      <h2>Memory Constellation</h2>
-      <p>Tap the stars. Small moments become a shape.</p>
-    </header>
-    <canvas id="constellation-canvas"></canvas>
-    <div class="l4-final-msg" id="l4-final-msg">
-      <h2>None of it was random.</h2>
-      <p>All of it was her.</p>
-      <strong>JILEBI</strong>
-      <span class="l4-final-sub">Every star here was a moment that chose to stay.</span>
-    </div>
-    <div class="l4-progress" id="l4-progress" aria-live="polite" aria-atomic="true">0 / 12 memories discovered</div>
-  </section>
-
-  <section id="level-5" class="level vignette">
-    <div class="level-bg level-bg-chaos"></div>
-    <header class="level-header l5-header">
-      <p class="level-kicker">Level 5</p>
-      <h2>Soft Chaos Room</h2>
-      <p>Play all five tiny games. Nothing too serious. Almost.</p>
-    </header>
-    <div class="l5-game-grid" id="l5-game-grid">
-      <button class="mini-game-card" id="card-hearts" type="button" data-game="hearts">
-        <span class="done-badge">&#10022;</span>
-        <span class="card-symbol">&#10022;</span>
-        <span class="card-title">Catch Soft Things</span>
+      <button class="envelope reveal" id="envelope" type="button" aria-label="Open the locked birthday envelope">
+        <span class="envelope-flap" aria-hidden="true"></span>
+        <span class="envelope-heart" aria-hidden="true">♡</span>
+        <span class="envelope-lock">tap to open</span>
       </button>
-      <button class="mini-game-card" id="card-overthink" type="button" data-game="overthink">
-        <span class="done-badge">&#10022;</span>
-        <span class="card-symbol">&#8767;</span>
-        <span class="card-title">Overthinking Meter</span>
-      </button>
-      <button class="mini-game-card" id="card-cat" type="button" data-game="cat">
-        <span class="done-badge">&#10022;</span>
-        <span class="card-symbol">🐈</span>
-        <span class="card-title">Tap the Cat</span>
-      </button>
-      <button class="mini-game-card" id="card-house" type="button" data-game="house">
-        <span class="done-badge">&#10022;</span>
-        <span class="card-symbol">&#8962;</span>
-        <span class="card-title">Pahad Ghar</span>
-      </button>
-      <button class="mini-game-card wide" id="card-mood" type="button" data-game="mood">
-        <span class="done-badge">&#10022;</span>
-        <span class="card-symbol">&#9789;</span>
-        <span class="card-title">Which Jilebi Today?</span>
-      </button>
-    </div>
-    <div class="l5-progress" id="l5-progress" aria-live="polite" aria-atomic="true">0 / 5 games played</div>
-  </section>
 
-  <section id="level-6" class="level">
-    <div class="l6-bg"></div>
-    <div id="letter-pause" class="letter-pause">
-      <p>Before the letter, one quiet second.</p>
-    </div>
-    <article class="l6-paper" id="l6-paper">
-      <div class="l6-seal" id="l6-seal">&#10022;</div>
-    </article>
-    <button class="l6-continue" id="l6-continue" type="button">
-      There is one final sky waiting
-    </button>
-  </section>
+      <article class="secret-letter" id="secretLetter" aria-live="polite">
+        <p id="typedMessage"></p>
+      </article>
+    </section>
 
-  <section id="level-7" class="level">
-    <div class="cinematic-scene" id="scene-1">
-      <div class="scene-image scene-mountain-img"></div>
-      <div class="scene-aurora"></div>
-      <div id="snowfall-container" class="particle-layer"></div>
-      <div class="scene-caption">
-        <p>Kedarnath. Not if. Not someday.</p>
-        <h2>When the mountain is ready for her.</h2>
+    <section class="section finale" id="finale" aria-labelledby="finalTitle">
+      <picture>
+        <source srcset="assets/dreamy-jilebi-cats.webp" type="image/webp">
+        <img class="final-art" src="assets/dreamy-jilebi-cats.png" alt="">
+      </picture>
+      <div class="final-sky" aria-hidden="true">
+        <span class="lantern lantern-one"></span>
+        <span class="lantern lantern-two"></span>
+        <span class="lantern lantern-three"></span>
+        <span class="lantern lantern-four"></span>
       </div>
-    </div>
-    <div class="cinematic-scene" id="scene-2">
-      <div class="scene-image scene-flags-bg"></div>
-      <div id="lanterns-container" class="particle-layer"></div>
-      <div class="scene-caption">
-        <p>May every yatra meet her gently.</p>
-        <h2>May every road feel protected.</h2>
+      <div class="final-copy reveal">
+        <p class="soft-label">last page</p>
+        <h2 id="finalTitle">Thank you for existing in this timeline.</h2>
+        <p>May the tired parts of you find rest. May the happy parts of you get louder. May every soft dream reach you gently.</p>
+        <button class="primary-link replay-button" id="replayButton" type="button">Replay Memories ✦</button>
       </div>
-    </div>
-    <div class="cinematic-scene" id="scene-3">
-      <div class="scene-image scene-home-bg"></div>
-      <div class="scene-big-moon" aria-hidden="true"></div>
-      <div id="scene3-stars" class="particle-layer"></div>
-      <div class="scene-caption">
-        <p>One calm morning.</p>
-        <h2>A window. Tea. Mountains. No hurry.</h2>
-      </div>
-    </div>
-    <div class="cinematic-scene final-scene" id="scene-4">
-      <div class="scene-image scene-final-bg"></div>
-      <div class="final-copy">
-        <div class="final-quote-line" id="fq-1">Maybe the world stays loud.</div>
-        <div class="final-quote-line" id="fq-2">I hope this little world stayed quiet for you.</div>
-        <div class="final-quote-line rose-script" id="fq-3">Happy Birthday, Jilebi.</div>
-        <div class="final-quote-line gold-small" id="fq-4">21/05/2006 · Turning 19 · Still magic.</div>
-        <div class="final-wish-line t-script" id="final-wish-line"></div>
-      </div>
-      <div class="rising-lantern-star" id="rising-lantern" aria-hidden="true">&#10022;</div>
-      <p class="image-credit">Images from Unsplash and Wikimedia Commons.</p>
-      <button class="restart-btn" id="final-restart-btn" type="button" onclick="window.LevelManager.restart()">Begin again</button>
-    </div>
-  </section>
-
-  <script src="script.js"></script>
-  <script src="improvements.js"></script>
-  <script src="level0-redesign.js"></script>
+    </section>
+  </main>
 </body>
 </html>
