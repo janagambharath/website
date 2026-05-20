@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#05060a">
   <meta name="description" content="Unlocking Jilebi's World - a cinematic birthday journey.">
-  <title>Happy Birthday, Jilebi 🌸</title>
+  <title>Unlocking Jilebi's World ✦</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://images.unsplash.com">
@@ -14,6 +14,7 @@
 </head>
 <body>
   <canvas id="star-canvas" aria-hidden="true"></canvas>
+  <div id="shooting-stars-container" aria-hidden="true"></div>
 
   <div id="transition-overlay" aria-hidden="true">
     <div class="bridge-copy">
@@ -25,7 +26,7 @@
 
   <div id="loading-screen">
     <div class="loading-star" aria-hidden="true">&#10022;</div>
-    <p>Opening Jilebi's world ✨</p>
+    <p id="loading-text">Opening Jilebi's world</p>
   </div>
 
   <div id="chapter-indicator">
@@ -34,12 +35,13 @@
     <span>Level <span id="chapter-num">0</span> / 7</span>
   </div>
 
-  <button id="mute-btn" type="button" aria-label="Toggle ambient sound">🔊</button>
+  <button id="mute-btn" type="button" aria-label="Toggle ambient sound">&#9835;</button>
+  <button id="easter-moon" type="button" aria-label="Hidden moon">&#9790;</button>
 
-  <button id="easter-moon" type="button" aria-label="Hidden moon">🌙</button>
   <div class="easter-msg" id="easter-msg">
-    Some people feel like moonlight 🌙 quiet, steady, and missed the second they disappear.
+    Some people feel like moonlight: quiet, steady, and missed the second they disappear.
   </div>
+
   <div id="secret-vault" aria-hidden="true">
     <button id="secret-close" type="button" aria-label="Close secret">x</button>
     <p class="secret-kicker">secret found</p>
@@ -47,14 +49,15 @@
   </div>
 
   <div id="return-screen">
-    <div class="return-title t-display">Welcome back, Jilebi 🌸</div>
+    <div class="return-title t-display">Welcome back, Jilebi</div>
     <div class="return-sub">Your unlocked world kept the lights on.</div>
     <div class="return-btns">
-      <button class="return-btn" id="continue-btn" type="button">✨ Continue Journey</button>
+      <button class="return-btn" id="continue-btn" type="button">Continue Journey</button>
       <button class="return-btn secondary" id="restart-btn-return" type="button">Start Over</button>
     </div>
   </div>
 
+  <!-- Vibe Card Overlay -->
   <div class="vibe-card-overlay" id="vibe-card-overlay">
     <article class="vibe-card">
       <button class="overlay-close vibe-card-close" id="vibe-card-close" type="button" aria-label="Close vibe">x</button>
@@ -65,6 +68,7 @@
     </article>
   </div>
 
+  <!-- Destination Card Overlay -->
   <div class="dest-card-overlay" id="dest-card-overlay">
     <article class="dest-card">
       <button class="overlay-close dest-card-close" id="dest-card-close" type="button" aria-label="Close dream">x</button>
@@ -75,42 +79,43 @@
     </article>
   </div>
 
+  <!-- Mini Games -->
   <div class="mini-game-overlay" id="game-hearts">
     <button class="mini-game-close" type="button" onclick="window.GameEngine.closeMiniGame('hearts')" aria-label="Close game">x</button>
-    <div class="mini-game-title">Catch the Hearts 💕</div>
+    <div class="mini-game-title">Catch the Soft Things</div>
     <div class="mini-game-sub">Catch 12 before they float away</div>
     <div id="hearts-counter" class="mini-counter">0 / 12</div>
-    <div id="hearts-arena" class="mini-arena" aria-label="Catch floating hearts"></div>
-    <div class="game-unlock-quote" id="hearts-quote">Soft hearts do not need to become hard to survive 🤍</div>
+    <div id="hearts-arena" class="mini-arena" aria-label="Catch floating lights"></div>
+    <div class="game-unlock-quote" id="hearts-quote">Soft hearts do not need to become hard to survive.</div>
     <button class="return-btn" id="hearts-done-btn" type="button" onclick="window.GameEngine.markDone('hearts')">Keep Going</button>
   </div>
 
   <div class="mini-game-overlay" id="game-overthink">
     <button class="mini-game-close" type="button" onclick="window.GameEngine.closeMiniGame('overthink')" aria-label="Close game">x</button>
-    <div class="mini-game-title">Overthinking Meter 🌪️</div>
+    <div class="mini-game-title">Overthinking Meter</div>
     <div class="mini-game-sub">Slide until it tells the truth</div>
     <div class="mountain-char" id="mountain-char" aria-hidden="true">&#9968;</div>
     <input type="range" class="overthink-slider" id="overthink-slider" min="0" max="4" value="0" step="1" aria-label="Overthinking level">
     <div class="overthink-label" id="overthink-label">Slide slowly...</div>
-    <div class="game-unlock-quote" id="overthink-quote">Your mind is not too much. It is just always trying to protect something soft 🤍</div>
+    <div class="game-unlock-quote" id="overthink-quote">Your mind is not too much. It is just always trying to protect something soft.</div>
     <button class="return-btn" id="overthink-done-btn" type="button" onclick="window.GameEngine.markDone('overthink')">Keep Going</button>
   </div>
 
   <div class="mini-game-overlay" id="game-cat">
     <button class="mini-game-close" type="button" onclick="window.GameEngine.closeMiniGame('cat')" aria-label="Close game">x</button>
-    <div class="mini-game-title">Tap the Cat 🐱</div>
+    <div class="mini-game-title">Tap the Cat</div>
     <div class="mini-game-sub">Five taps. No overthinking.</div>
     <div id="cat-counter" class="mini-counter">0 / 5</div>
     <div id="cat-arena" class="mini-arena square-arena">
-      <button class="game-cat" id="game-cat-emoji" type="button" aria-label="Tap the cat">cat</button>
+      <button class="game-cat" id="game-cat-emoji" type="button" aria-label="Tap the cat">🐈</button>
     </div>
-    <div class="game-unlock-quote" id="cat-quote">Some chaos is allowed. Especially the tiny, harmless kind 🐾</div>
+    <div class="game-unlock-quote" id="cat-quote">Some chaos is allowed. Especially the tiny, harmless kind.</div>
     <button class="return-btn" id="cat-done-btn" type="button" onclick="window.GameEngine.markDone('cat')">Keep Going</button>
   </div>
 
   <div class="mini-game-overlay" id="game-house">
     <button class="mini-game-close" type="button" onclick="window.GameEngine.closeMiniGame('house')" aria-label="Close game">x</button>
-    <div class="mini-game-title">Build the Pahad Ghar 🏡</div>
+    <div class="mini-game-title">Build the Pahad Ghar</div>
     <div class="mini-game-sub">Choose the morning she deserves</div>
     <div class="house-builder">
       <div class="house-choice-group">
@@ -143,14 +148,14 @@
         <div class="house-body"></div>
         <p id="house-preview-text">Choose all three pieces</p>
       </div>
-      <div class="game-unlock-quote" id="house-quote">One day, this will not be a game. It will be a window, tea, and a quiet morning ☕🏔️</div>
+      <div class="game-unlock-quote" id="house-quote">One day, this will not be a game. It will be a window, tea, and a quiet morning.</div>
       <button class="return-btn" id="house-done-btn" type="button" onclick="window.GameEngine.markDone('house')">Keep Going</button>
     </div>
   </div>
 
   <div class="mini-game-overlay" id="game-mood">
     <button class="mini-game-close" type="button" onclick="window.GameEngine.closeMiniGame('mood')" aria-label="Close game">x</button>
-    <div class="mini-game-title" id="mood-title">Which Jilebi Today? ✨</div>
+    <div class="mini-game-title" id="mood-title">Which Jilebi Today?</div>
     <div class="mini-game-sub" id="mood-sub">Question 1 of 5</div>
     <div class="mood-question" id="mood-question"></div>
     <div class="mood-options" id="mood-options"></div>
@@ -162,8 +167,25 @@
     <button class="return-btn" id="mood-done-btn" type="button" onclick="window.GameEngine.markDone('mood')">Keep Going</button>
   </div>
 
+  <!-- Wish Jar Overlay (NEW) -->
+  <div class="wish-overlay" id="wish-overlay">
+    <div class="wish-card">
+      <p class="wish-kicker">one last thing</p>
+      <h2 class="wish-title t-display">Make a birthday wish, Jilebi.</h2>
+      <p class="wish-sub t-script">Type it here. Let it rise to the sky.</p>
+      <textarea id="wish-input" class="wish-textarea t-script" maxlength="120" placeholder="I wish..." rows="3"></textarea>
+      <div class="wish-actions">
+        <button id="wish-release-btn" class="return-btn" type="button">Release it ✦</button>
+        <button id="wish-skip-btn" class="return-btn secondary" type="button">Skip</button>
+      </div>
+    </div>
+  </div>
+  <div class="floating-wish" id="floating-wish"></div>
+
+  <!-- Levels -->
   <section id="level-0" class="level vignette">
     <div class="l0-aurora"></div>
+    <div class="l0-aurora l0-aurora-2"></div>
     <button class="l0-moon" id="l0-moon" type="button" aria-label="Moon secret"></button>
     <div class="l0-mist mist-one"></div>
     <div class="l0-mist mist-two"></div>
@@ -183,8 +205,9 @@
       <span class="typewriter-line main-title" id="l0-line3"></span>
       <span class="typewriter-line sub-title" id="l0-line4"></span>
     </div>
-    <button class="l0-cta" id="l0-cta" type="button">Open the gate</button>
+    <button class="l0-cta shimmer-btn" id="l0-cta" type="button">Open the gate</button>
     <div class="date-sigil" id="date-sigil">21 / 05 / 2006</div>
+    <div class="birthday-badge" id="birthday-badge">🎂 Happy 19th Birthday</div>
   </section>
 
   <section id="level-1" class="level vignette">
@@ -256,28 +279,28 @@
     </header>
     <div class="l5-game-grid" id="l5-game-grid">
       <button class="mini-game-card" id="card-hearts" type="button" data-game="hearts">
-        <span class="done-badge">✨</span>
-        <span class="card-symbol">💕</span>
-        <span class="card-title">Catch Hearts</span>
+        <span class="done-badge">&#10022;</span>
+        <span class="card-symbol">&#10022;</span>
+        <span class="card-title">Catch Soft Things</span>
       </button>
       <button class="mini-game-card" id="card-overthink" type="button" data-game="overthink">
-        <span class="done-badge">✨</span>
-        <span class="card-symbol">🌪️</span>
+        <span class="done-badge">&#10022;</span>
+        <span class="card-symbol">&#8767;</span>
         <span class="card-title">Overthinking Meter</span>
       </button>
       <button class="mini-game-card" id="card-cat" type="button" data-game="cat">
-        <span class="done-badge">✨</span>
-        <span class="card-symbol">🐱</span>
+        <span class="done-badge">&#10022;</span>
+        <span class="card-symbol">🐈</span>
         <span class="card-title">Tap the Cat</span>
       </button>
       <button class="mini-game-card" id="card-house" type="button" data-game="house">
-        <span class="done-badge">✨</span>
-        <span class="card-symbol">🏡</span>
+        <span class="done-badge">&#10022;</span>
+        <span class="card-symbol">&#8962;</span>
         <span class="card-title">Pahad Ghar</span>
       </button>
       <button class="mini-game-card wide" id="card-mood" type="button" data-game="mood">
-        <span class="done-badge">✨</span>
-        <span class="card-symbol">🌙</span>
+        <span class="done-badge">&#10022;</span>
+        <span class="card-symbol">&#9789;</span>
         <span class="card-title">Which Jilebi Today?</span>
       </button>
     </div>
@@ -292,7 +315,7 @@
     <article class="l6-paper" id="l6-paper">
       <div class="l6-seal" id="l6-seal">&#10022;</div>
     </article>
-    <button class="l6-continue" id="l6-continue" type="button" onclick="window.LevelManager.transition(7)">
+    <button class="l6-continue" id="l6-continue" type="button">
       There is one final sky waiting
     </button>
   </section>
@@ -329,10 +352,11 @@
       <div class="final-copy">
         <div class="final-quote-line" id="fq-1">Maybe the world stays loud.</div>
         <div class="final-quote-line" id="fq-2">I hope this little world stayed quiet for you.</div>
-        <div class="final-quote-line rose-script" id="fq-3">Happy Birthday, Jilebi 🤍</div>
-        <div class="final-quote-line gold-small" id="fq-4">21/05/2006 🌸 Still becoming. Still magic.</div>
+        <div class="final-quote-line rose-script" id="fq-3">Happy Birthday, Jilebi.</div>
+        <div class="final-quote-line gold-small" id="fq-4">21/05/2006 · Turning 19 · Still magic.</div>
+        <div class="final-wish-line t-script" id="final-wish-line"></div>
       </div>
-      <div class="rising-lantern-star" id="rising-lantern" aria-hidden="true">🏮</div>
+      <div class="rising-lantern-star" id="rising-lantern" aria-hidden="true">&#10022;</div>
       <p class="image-credit">Images from Unsplash and Wikimedia Commons.</p>
       <button class="restart-btn" id="final-restart-btn" type="button" onclick="window.LevelManager.restart()">Begin again</button>
     </div>

@@ -16,50 +16,37 @@ const IMG = {
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
+// ─── Birthday Detection ───────────────────────────────────────────────
+const Birthday = {
+  isToday() {
+    const now = new Date();
+    return now.getMonth() === 4 && now.getDate() === 21; // May 21
+  },
+  age() {
+    return new Date().getFullYear() - 2006;
+  }
+};
+
+// ─── Utils ────────────────────────────────────────────────────────────
 const Utils = {
-  rand(min, max) {
-    return Math.random() * (max - min) + min;
-  },
-
-  randInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  },
-
-  wait(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  },
-
-  vibrate(pattern = [25]) {
-    if (navigator.vibrate) navigator.vibrate(pattern);
-  },
+  rand(min, max) { return Math.random() * (max - min) + min; },
+  randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; },
+  wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); },
+  vibrate(pattern = [25]) { if (navigator.vibrate) navigator.vibrate(pattern); },
 
   typewriter(el, text, speed = 42, token) {
     return new Promise(resolve => {
-      if (!el) {
-        resolve();
-        return;
-      }
-
+      if (!el) { resolve(); return; }
       el.textContent = '';
       el.style.opacity = '1';
       let i = 0;
-
       const tick = () => {
-        if (token && token.cancelled) {
-          resolve();
-          return;
-        }
-
+        if (token && token.cancelled) { resolve(); return; }
         el.textContent = text.slice(0, i);
         i += 1;
-
-        if (i <= text.length) {
-          setTimeout(tick, speed);
-        } else {
-          resolve();
-        }
+        if (i <= text.length) setTimeout(tick, speed);
+        else resolve();
       };
-
       tick();
     });
   },
@@ -82,6 +69,7 @@ const Utils = {
   }
 };
 
+// ─── Image Preloader ──────────────────────────────────────────────────
 const ImagePreloader = {
   preload() {
     Object.values(IMG).forEach(src => {
@@ -92,6 +80,45 @@ const ImagePreloader = {
   }
 };
 
+// ─── Shooting Stars ───────────────────────────────────────────────────
+const ShootingStars = {
+  timer: null,
+  active: false,
+
+  start() {
+    this.active = true;
+    this.schedule();
+  },
+
+  stop() {
+    this.active = false;
+    clearTimeout(this.timer);
+  },
+
+  schedule() {
+    if (!this.active) return;
+    const delay = Utils.rand(4000, 9000);
+    this.timer = setTimeout(() => {
+      this.shoot();
+      this.schedule();
+    }, delay);
+  },
+
+  shoot() {
+    const container = $('#shooting-stars-container');
+    if (!container) return;
+    const star = document.createElement('div');
+    star.className = 'shooting-star';
+    star.style.top = `${Utils.rand(4, 42)}vh`;
+    star.style.left = `${Utils.rand(15, 75)}vw`;
+    star.style.setProperty('--ss-angle', `${Utils.rand(-38, -22)}deg`);
+    star.style.setProperty('--ss-len', `${Utils.rand(90, 160)}px`);
+    container.appendChild(star);
+    setTimeout(() => star.remove(), 900);
+  }
+};
+
+// ─── Audio Manager ────────────────────────────────────────────────────
 const AudioManager = {
   muted: false,
   started: false,
@@ -102,25 +129,20 @@ const AudioManager = {
   init() {
     this.button = $('#mute-btn');
     this.button.addEventListener('click', () => this.toggleMute());
-
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
       this.masterGain = this.ctx.createGain();
       this.masterGain.gain.value = 0;
       this.masterGain.connect(this.ctx.destination);
       this.ready = true;
-    } catch (err) {
-      this.ready = false;
-    }
+    } catch (err) { this.ready = false; }
   },
 
   async start() {
     if (!this.ready || this.started) return;
     this.started = true;
-
     try {
       if (this.ctx.state === 'suspended') await this.ctx.resume();
-
       const freqs = [98, 146.83, 196, 220, 293.66];
       freqs.forEach((freq, idx) => {
         const osc = this.ctx.createOscillator();
@@ -128,37 +150,28 @@ const AudioManager = {
         const pan = this.ctx.createStereoPanner();
         const lfo = this.ctx.createOscillator();
         const lfoGain = this.ctx.createGain();
-
         osc.type = idx % 2 ? 'triangle' : 'sine';
         osc.frequency.value = freq;
-
         lfo.frequency.value = 0.035 + idx * 0.013;
         lfoGain.gain.value = freq * 0.004;
         lfo.connect(lfoGain);
         lfoGain.connect(osc.frequency);
-
         gain.gain.value = 0.012 - idx * 0.0012;
         pan.pan.value = (idx - 2) * 0.18;
-
         osc.connect(gain);
         gain.connect(pan);
         pan.connect(this.masterGain);
-
-        osc.start();
-        lfo.start();
+        osc.start(); lfo.start();
         this.oscillators.push(osc, lfo);
       });
-
       this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
       this.masterGain.gain.linearRampToValueAtTime(this.volume, this.ctx.currentTime + 3);
-    } catch (err) {
-      this.ready = false;
-    }
+    } catch (err) { this.ready = false; }
   },
 
   toggleMute() {
     this.muted = !this.muted;
-    this.button.textContent = this.muted ? '🔇' : '🔊';
+    this.button.textContent = this.muted ? 'off' : '\u266b';
     if (this.ready && this.masterGain) {
       this.masterGain.gain.setTargetAtTime(this.muted ? 0 : this.volume, this.ctx.currentTime, 0.22);
     }
@@ -166,30 +179,24 @@ const AudioManager = {
 
   chime(kind = 'soft') {
     if (!this.ready || this.muted) return;
-
     try {
       const now = this.ctx.currentTime;
       const gain = this.ctx.createGain();
       const osc = this.ctx.createOscillator();
       const high = kind === 'unlock' ? 1174.66 : 880;
       const low = kind === 'deep' ? 246.94 : 440;
-
       osc.type = 'sine';
       osc.frequency.setValueAtTime(high, now);
       osc.frequency.exponentialRampToValueAtTime(low, now + 0.75);
       gain.gain.setValueAtTime(kind === 'deep' ? 0.12 : 0.18, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
-
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(now);
-      osc.stop(now + 1.15);
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      osc.start(now); osc.stop(now + 1.15);
     } catch (err) {}
   },
 
   tick() {
     if (!this.ready || this.muted) return;
-
     try {
       const now = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
@@ -199,14 +206,38 @@ const AudioManager = {
       osc.frequency.exponentialRampToValueAtTime(1760, now + 0.12);
       gain.gain.setValueAtTime(0.11, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.24);
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      osc.start(now); osc.stop(now + 0.24);
+    } catch (err) {}
+  },
+
+  // Birthday melody — first phrase of Happy Birthday
+  playBirthdayMelody() {
+    if (!this.ready || this.muted) return;
+    try {
+      const now = this.ctx.currentTime + 0.5;
+      // G G A G C B  (Happy Birthday to you)
+      const notes = [
+        [392, 0, 0.28], [392, 0.32, 0.14], [440, 0.5, 0.42],
+        [392, 0.96, 0.42], [523.25, 1.42, 0.42], [493.88, 1.88, 0.9]
+      ];
+      notes.forEach(([freq, start, dur]) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, now + start);
+        gain.gain.linearRampToValueAtTime(0.11, now + start + 0.04);
+        gain.gain.setValueAtTime(0.11, now + start + dur - 0.04);
+        gain.gain.linearRampToValueAtTime(0, now + start + dur);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now + start); osc.stop(now + start + dur + 0.1);
+      });
     } catch (err) {}
   }
 };
 
+// ─── Particle System (background stars) ──────────────────────────────
 const ParticleSystem = {
   init() {
     this.canvas = $('#star-canvas');
@@ -227,14 +258,14 @@ const ParticleSystem = {
   },
 
   createStars() {
-    const count = window.innerWidth < 600 ? 70 : 110;
+    const count = window.innerWidth < 600 ? 80 : 130;
     this.stars = Array.from({ length: count }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
-      r: Utils.rand(0.4, 1.8),
+      r: Utils.rand(0.35, 1.9),
       phase: Utils.rand(0, Math.PI * 2),
-      speed: Utils.rand(0.25, 0.9),
-      drift: Utils.rand(-0.05, 0.05)
+      speed: Utils.rand(0.22, 0.95),
+      drift: Utils.rand(-0.04, 0.04)
     }));
   },
 
@@ -242,58 +273,117 @@ const ParticleSystem = {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
     const t = performance.now() * 0.001;
-
     this.stars.forEach(star => {
       star.x += star.drift;
       if (star.x < -10) star.x = window.innerWidth + 10;
       if (star.x > window.innerWidth + 10) star.x = -10;
-
-      const alpha = 0.18 + 0.58 * (0.5 + 0.5 * Math.sin(t * star.speed + star.phase));
+      const alpha = 0.16 + 0.62 * (0.5 + 0.5 * Math.sin(t * star.speed + star.phase));
       ctx.beginPath();
       ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(248,239,227,${alpha})`;
       ctx.fill();
     });
-
     requestAnimationFrame(() => this.animate());
   }
 };
 
+// ─── Wish Jar ─────────────────────────────────────────────────────────
+const WishJar = {
+  wish: '',
+
+  show() {
+    const overlay = $('#wish-overlay');
+    const input = $('#wish-input');
+    const releaseBtn = $('#wish-release-btn');
+    const skipBtn = $('#wish-skip-btn');
+
+    input.value = '';
+    overlay.classList.add('visible');
+    setTimeout(() => input.focus(), 500);
+
+    releaseBtn.onclick = () => {
+      const text = input.value.trim();
+      if (text) {
+        this.wish = text;
+        this.release(text);
+      } else {
+        this.proceed();
+      }
+    };
+
+    skipBtn.onclick = () => this.proceed();
+  },
+
+  async release(text) {
+    const overlay = $('#wish-overlay');
+    overlay.classList.remove('visible');
+    await Utils.wait(400);
+
+    const floater = $('#floating-wish');
+    floater.textContent = `"${text}"`;
+    floater.classList.add('rising');
+    AudioManager.chime('unlock');
+    Utils.vibrate([20, 60, 20]);
+
+    // Sparkle burst from center
+    for (let i = 0; i < 10; i += 1) {
+      setTimeout(() => {
+        const dot = document.createElement('span');
+        dot.className = 'wish-sparkle';
+        dot.style.left = `${Utils.rand(30, 70)}vw`;
+        dot.style.top = `${Utils.rand(30, 70)}vh`;
+        document.body.appendChild(dot);
+        setTimeout(() => dot.remove(), 700);
+      }, i * 80);
+    }
+
+    await Utils.wait(3400);
+    floater.classList.remove('rising');
+    this.proceed();
+  },
+
+  proceed() {
+    LevelManager.transition(7);
+  }
+};
+
+// ─── Level Manager ────────────────────────────────────────────────────
 const LevelManager = {
   current: -1,
   progress: {},
-  key: 'jilebi_progress',
-  labels: ['Gate 🌙', 'Star Gate ✨', 'Her Vibe 🌸', 'Dream Path 🏔️', 'Memories ⭐', 'Chaos 💕', 'Letter 🤍', 'Final Sky 🏮'],
+  key: 'jilebi_progress_v2',
+  labels: ['Gate', 'Star Gate', 'Her Vibe', 'Dream Path', 'Memories', 'Chaos', 'Letter', 'Final Sky'],
+  titles: [
+    'A world is opening ✦',
+    'Star Gate · Jilebi\'s World',
+    'Her Vibe · Jilebi\'s World',
+    'Dream Path · Jilebi\'s World',
+    'Memories · Jilebi\'s World',
+    'Soft Chaos · Jilebi\'s World',
+    'The Letter · Jilebi\'s World',
+    '✦ Final Sky · Jilebi\'s World'
+  ],
   bridges: {
-    1: ['Level 1 ✨', 'The Star Gate', 'Catch enough light to open what is waiting.'],
-    2: ['Level 2 🌸', 'Her Vibe Map', 'Some people are not simple. She never was.'],
-    3: ['Level 3 🏔️', 'Dream Path', 'Now the map moves from who she is to where her heart wants to go.'],
-    4: ['Level 4 ⭐', 'Memory Constellation', 'The smallest moments are about to start glowing.'],
-    5: ['Level 5 💕', 'Soft Chaos Room', 'A little play before the quiet part.'],
-    6: ['Level 6 🤍', 'The Letter', 'After all the gates, the words can finally arrive.'],
-    7: ['Level 7 🏮', 'Final Sky', 'No task now. Just watch.']
+    1: ['Level 1', 'The Star Gate', 'Catch enough light to open what is waiting.'],
+    2: ['Level 2', 'Her Vibe Map', 'Some people are not simple. She never was.'],
+    3: ['Level 3', 'Dream Path', 'Now the map moves from who she is to where her heart wants to go.'],
+    4: ['Level 4', 'Memory Constellation', 'The smallest moments are about to start glowing.'],
+    5: ['Level 5', 'Soft Chaos Room', 'A little play before the quiet part.'],
+    6: ['Level 6', 'The Letter', 'After all the gates, the words can finally arrive.'],
+    7: ['Level 7', 'Final Sky', 'No task now. Just watch.']
   },
 
   init() {
-    try {
-      this.progress = JSON.parse(localStorage.getItem(this.key) || '{}');
-    } catch (err) {
-      this.progress = {};
-    }
-
-    if (this.progress.level > 0) {
-      this.showReturnScreen();
-    } else {
-      this.showLevel(0);
-    }
+    try { this.progress = JSON.parse(localStorage.getItem(this.key) || '{}'); }
+    catch (err) { this.progress = {}; }
+    if (this.progress.level > 0) this.showReturnScreen();
+    else this.showLevel(0);
   },
 
   save() {
     try {
       localStorage.setItem(this.key, JSON.stringify({
-        ...this.progress,
-        level: this.current,
-        timestamp: Date.now()
+        ...this.progress, level: this.current, timestamp: Date.now()
       }));
     } catch (err) {}
   },
@@ -301,13 +391,11 @@ const LevelManager = {
   showReturnScreen() {
     const screen = $('#return-screen');
     screen.classList.add('visible');
-
     $('#continue-btn').onclick = () => {
       screen.classList.remove('visible');
       this.showLevel(Math.max(0, Math.min(7, this.progress.level || 0)));
       if (this.progress.level > 0) $('#mute-btn').classList.add('visible');
     };
-
     $('#restart-btn-return').onclick = () => {
       screen.classList.remove('visible');
       this.restart(true);
@@ -315,22 +403,15 @@ const LevelManager = {
   },
 
   showLevel(num) {
-    $$('.level').forEach(level => {
-      level.classList.remove('active');
-      level.style.display = 'none';
-    });
-
+    $$('.level').forEach(level => { level.classList.remove('active'); level.style.display = 'none'; });
     this.current = num;
     document.body.dataset.level = String(num);
     this.save();
-
     const level = $(`#level-${num}`);
     if (!level) return;
-
     level.style.display = 'flex';
     requestAnimationFrame(() => level.classList.add('active'));
     this.updateChrome(num);
-
     const inits = [Level0, Level1, Level2, Level3, Level4, Level5, Level6, Level7];
     setTimeout(() => inits[num] && inits[num].init(), 250);
   },
@@ -340,18 +421,17 @@ const LevelManager = {
     $('#chapter-num').textContent = String(num);
     $('#chapter-label').textContent = this.labels[num] || 'World';
     indicator.classList.toggle('visible', num > 0);
+    document.title = this.titles[num] || 'Jilebi\'s World ✦';
   },
 
   async transition(toLevel, options = {}) {
     Utils.vibrate([20]);
     AudioManager.chime(options.chime || 'soft');
-
     const overlay = $('#transition-overlay');
     const copy = this.bridges[toLevel] || ['Level unlocked', this.labels[toLevel] || '', ''];
     $('#bridge-kicker').textContent = copy[0];
     $('#bridge-title').textContent = options.title || copy[1];
     $('#bridge-sub').textContent = options.sub || copy[2];
-
     overlay.classList.add('active');
     await Utils.wait(options.long ? 1500 : 760);
     this.showLevel(toLevel);
@@ -360,19 +440,16 @@ const LevelManager = {
   },
 
   restart(skipTransition = false) {
-    try {
-      localStorage.removeItem(this.key);
-    } catch (err) {}
+    try { localStorage.removeItem(this.key); } catch (err) {}
     this.progress = {};
     GameEngine.completed.clear();
-    if (skipTransition) {
-      this.showLevel(0);
-    } else {
-      this.transition(0, { title: 'The Gate', sub: 'Again, from the first light.' });
-    }
+    WishJar.wish = '';
+    if (skipTransition) this.showLevel(0);
+    else this.transition(0, { title: 'The Gate', sub: 'Again, from the first light.' });
   }
 };
 
+// ─── Level 0 ──────────────────────────────────────────────────────────
 const Level0 = {
   token: null,
   moonTaps: 0,
@@ -380,23 +457,35 @@ const Level0 = {
   init() {
     if (this.token) this.token.cancelled = true;
     this.token = { cancelled: false };
-    $$('.typewriter-line').forEach(line => {
-      line.textContent = '';
-      line.style.opacity = '0';
-    });
+    $$('.typewriter-line').forEach(line => { line.textContent = ''; line.style.opacity = '0'; });
     $('#l0-cta').style.opacity = '0';
     $('#date-sigil').classList.remove('visible');
+    $('#birthday-badge').classList.remove('visible');
     $('#l0-moon').onclick = () => this.tapMoon();
+
+    if (Birthday.isToday()) {
+      $('#loading-text').textContent = `Happy ${Birthday.age()}th Birthday, Jilebi 🎂`;
+      const badge = $('#birthday-badge');
+      setTimeout(() => badge.classList.add('visible'), 2000);
+    }
+
     this.runTextSequence(this.token);
+    ShootingStars.start();
   },
 
   async runTextSequence(token) {
     await Utils.wait(520);
-    const lines = [
+    const isBday = Birthday.isToday();
+    const lines = isBday ? [
+      ['#l0-line1', `It is your ${Birthday.age()}th birthday.`, 52],
+      ['#l0-line2', 'So someone built you a world.', 45],
+      ['#l0-line3', 'Jilebi', 72],
+      ['#l0-line4', 'Unlocking the quiet places you dream about.', 38]
+    ] : [
       ['#l0-line1', 'This is not a birthday page.', 52],
       ['#l0-line2', 'It is a little world built for one person.', 45],
-      ['#l0-line3', 'Jilebi 🌸', 72],
-      ['#l0-line4', 'Unlocking the quiet places she dreams about 🤍', 38]
+      ['#l0-line3', 'Jilebi', 72],
+      ['#l0-line4', 'Unlocking the quiet places she dreams about.', 38]
     ];
 
     for (const [selector, text, speed] of lines) {
@@ -412,24 +501,20 @@ const Level0 = {
   tapMoon() {
     this.moonTaps += 1;
     Utils.vibrate([12]);
-    if (this.moonTaps === 2) {
-      $('#date-sigil').classList.add('visible');
-      AudioManager.chime('soft');
-    }
-    if (this.moonTaps >= 5) {
-      EasterEgg.showSecret();
-      this.moonTaps = 0;
-    }
+    if (this.moonTaps === 2) { $('#date-sigil').classList.add('visible'); AudioManager.chime('soft'); }
+    if (this.moonTaps >= 5) { EasterEgg.showSecret(); this.moonTaps = 0; }
   },
 
   begin() {
     if (this.token) this.token.cancelled = true;
     $('#mute-btn').classList.add('visible');
     AudioManager.start();
+    if (Birthday.isToday()) setTimeout(() => AudioManager.playBirthdayMelody(), 800);
     LevelManager.transition(1);
   }
 };
 
+// ─── Level 1 ──────────────────────────────────────────────────────────
 const Level1 = {
   caught: 0,
   target: 10,
@@ -442,9 +527,8 @@ const Level1 = {
     this.active = true;
     $('#l1-golden-light').classList.remove('visible');
     $('#l1-unlock-msg').classList.remove('visible');
-    ['#gate-door-left', '#gate-door-right'].forEach(selector => {
-      const door = $(selector);
-      if (door) door.style.animation = '';
+    ['#gate-door-left', '#gate-door-right'].forEach(s => {
+      const d = $(s); if (d) d.style.animation = '';
     });
     this.updateCounter();
     this.spawnLoop();
@@ -452,31 +536,25 @@ const Level1 = {
 
   cleanup() {
     this.active = false;
-    this.timers.forEach(timer => clearTimeout(timer));
+    this.timers.forEach(t => clearTimeout(t));
     this.timers = [];
-    const container = $('#l1-stars-container');
-    if (container) container.innerHTML = '';
+    const c = $('#l1-stars-container');
+    if (c) c.innerHTML = '';
   },
 
-  updateCounter() {
-    $('#l1-counter').textContent = `\u2726 ${this.caught} / ${this.target}`;
-  },
+  updateCounter() { $('#l1-counter').textContent = `\u2726 ${this.caught} / ${this.target}`; },
 
   spawnLoop() {
     const container = $('#l1-stars-container');
     if (!container) return;
-
     const spawn = () => {
       if (!this.active) return;
       if (this.caught < this.target) {
         this.spawnStar(container);
-        this.timers.push(setTimeout(spawn, Utils.rand(320, 680)));
+        this.timers.push(setTimeout(spawn, Utils.rand(300, 660)));
       }
     };
-
-    for (let i = 0; i < 7; i += 1) {
-      this.timers.push(setTimeout(spawn, i * 170));
-    }
+    for (let i = 0; i < 7; i += 1) this.timers.push(setTimeout(spawn, i * 170));
   },
 
   spawnStar(container) {
@@ -503,11 +581,7 @@ const Level1 = {
       requestAnimationFrame(float);
     };
 
-    star.onclick = event => {
-      event.stopPropagation();
-      this.catchStar(star);
-    };
-
+    star.onclick = e => { e.stopPropagation(); this.catchStar(star); };
     container.appendChild(star);
     requestAnimationFrame(float);
 
@@ -525,34 +599,30 @@ const Level1 = {
     this.caught += 1;
     this.updateCounter();
     setTimeout(() => star.remove(), 360);
-
-    if (this.caught >= this.target) {
-      this.unlock();
-    }
+    if (this.caught >= this.target) this.unlock();
   },
 
   sparkle(star) {
     const rect = star.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-
-    for (let i = 0; i < 8; i += 1) {
+    for (let i = 0; i < 10; i += 1) {
       const dot = document.createElement('span');
       dot.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;width:5px;height:5px;border-radius:50%;background:var(--gold);z-index:9300;pointer-events:none;`;
       document.body.appendChild(dot);
-      const angle = Math.PI * 2 * (i / 8);
-      const distance = Utils.rand(26, 58);
+      const angle = Math.PI * 2 * (i / 10);
+      const distance = Utils.rand(28, 62);
       dot.animate([
-        { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
-        { transform: `translate(calc(-50% + ${Math.cos(angle) * distance}px), calc(-50% + ${Math.sin(angle) * distance}px)) scale(0)`, opacity: 0 }
-      ], { duration: 520, easing: 'cubic-bezier(.16,1,.3,1)' }).onfinish = () => dot.remove();
+        { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+        { transform: `translate(calc(-50% + ${Math.cos(angle) * distance}px),calc(-50% + ${Math.sin(angle) * distance}px)) scale(0)`, opacity: 0 }
+      ], { duration: 540, easing: 'cubic-bezier(.16,1,.3,1)' }).onfinish = () => dot.remove();
     }
   },
 
   async unlock() {
     if (!this.active) return;
     this.active = false;
-    this.timers.forEach(timer => clearTimeout(timer));
+    this.timers.forEach(t => clearTimeout(t));
     AudioManager.chime('unlock');
     $('#gate-door-left').style.animation = 'gate-open-left 1500ms var(--ease) forwards';
     $('#gate-door-right').style.animation = 'gate-open-right 1500ms var(--ease) forwards';
@@ -564,59 +634,19 @@ const Level1 = {
   }
 };
 
+// ─── Level 2 ──────────────────────────────────────────────────────────
 const Level2 = {
   tapped: new Set(),
   unlocking: false,
   vibes: [
-    {
-      label: 'Introvert Peace',
-      symbol: '🌙',
-      quote: 'She is not distant. She is careful with where her energy goes.',
-      img: IMG.room,
-      color: 'rgba(143, 216, 210, 0.20)'
-    },
-    {
-      label: 'Deep Thinker',
-      symbol: '📖',
-      quote: 'She hears meanings under the sentence, and feelings under the joke.',
-      img: IMG.night,
-      color: 'rgba(215, 183, 106, 0.22)'
-    },
-    {
-      label: 'Soft Heart',
-      symbol: '🤍',
-      quote: 'Soft does not mean easy to break. Sometimes it means still kind after everything.',
-      img: IMG.tea,
-      color: 'rgba(217, 139, 168, 0.24)'
-    },
-    {
-      label: 'Quiet Strength',
-      symbol: '🏔️',
-      quote: 'She carries things quietly, then still shows up with warmth.',
-      img: IMG.mountains,
-      color: 'rgba(143, 216, 210, 0.18)'
-    },
-    {
-      label: 'Late Night Energy',
-      symbol: '✨',
-      quote: 'Reels, thoughts, songs, sudden honesty. The night knows her real language.',
-      img: IMG.sky,
-      color: 'rgba(215, 183, 106, 0.18)'
-    },
-    {
-      label: 'Soft Chaos',
-      symbol: '💕',
-      quote: 'Teasing, blushing talks, overthinking, laughing. A whole weather system, somehow beautiful.',
-      img: IMG.rain,
-      color: 'rgba(242, 166, 90, 0.18)'
-    }
+    { label: 'Introvert Peace', symbol: '\u263e', quote: 'She is not distant. She is careful with where her energy goes.', img: IMG.room, color: 'rgba(143,216,210,0.20)' },
+    { label: 'Deep Thinker', symbol: '\u2234', quote: 'She hears meanings under the sentence, and feelings under the joke.', img: IMG.night, color: 'rgba(215,183,106,0.22)' },
+    { label: 'Soft Heart', symbol: '\u25cc', quote: 'Soft does not mean easy to break. Sometimes it means still kind after everything.', img: IMG.tea, color: 'rgba(217,139,168,0.24)' },
+    { label: 'Quiet Strength', symbol: '\u25b3', quote: 'She carries things quietly, then still shows up with warmth.', img: IMG.mountains, color: 'rgba(143,216,210,0.18)' },
+    { label: 'Late Night Energy', symbol: '\u2726', quote: 'Reels, thoughts, songs, sudden honesty. The night knows her real language.', img: IMG.sky, color: 'rgba(215,183,106,0.18)' },
+    { label: 'Soft Chaos', symbol: '\u223f', quote: 'Teasing, blushing talks, overthinking, laughing. A whole weather system, somehow beautiful.', img: IMG.rain, color: 'rgba(242,166,90,0.18)' }
   ],
-  quotes: [
-    'quiet hearts 🤍 full skies',
-    'pahad wali peace 🏔️',
-    'late-night thoughts 🌙',
-    'soft chaos 💕 real comfort'
-  ],
+  quotes: ['quiet hearts, full skies', 'pahad wali peace', 'late-night thoughts', 'soft chaos, real comfort'],
 
   init() {
     this.tapped.clear();
@@ -628,15 +658,7 @@ const Level2 = {
   render() {
     const container = $('#l2-orb-container');
     container.innerHTML = '';
-    const positions = [
-      [16, 28],
-      [62, 21],
-      [36, 45],
-      [76, 52],
-      [20, 68],
-      [56, 73]
-    ];
-
+    const positions = [[16,28],[62,21],[36,45],[76,52],[20,68],[56,73]];
     this.vibes.forEach((vibe, index) => {
       const orb = document.createElement('button');
       orb.type = 'button';
@@ -650,7 +672,6 @@ const Level2 = {
       orb.onclick = () => this.tap(index, orb, vibe);
       container.appendChild(orb);
     });
-
     this.quotes.forEach(quote => {
       const el = document.createElement('span');
       el.className = 'ambient-quote';
@@ -671,9 +692,7 @@ const Level2 = {
       AudioManager.chime('soft');
       this.updateProgress();
     }
-
     this.showCard(vibe);
-
     if (this.tapped.size >= this.vibes.length && !this.unlocking) {
       this.unlocking = true;
       setTimeout(() => this.unlock(), 1450);
@@ -687,9 +706,7 @@ const Level2 = {
     $('#vibe-card-quote').textContent = vibe.quote;
     overlay.classList.add('visible');
     $('#vibe-card-close').onclick = () => overlay.classList.remove('visible');
-    overlay.onclick = event => {
-      if (event.target === overlay) overlay.classList.remove('visible');
-    };
+    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('visible'); };
   },
 
   updateProgress() {
@@ -706,40 +723,16 @@ const Level2 = {
   }
 };
 
+// ─── Level 3 ──────────────────────────────────────────────────────────
 const Level3 = {
   unlocked: new Set(),
   unlocking: false,
   destinations: [
-    {
-      name: 'Kedarnath',
-      hint: 'the mountain that keeps calling',
-      img: IMG.kedarnath,
-      text: 'For the dream that feels older than a plan. One day, when Kedarnath happens, the cold air will not feel harsh. It will feel like an answer.'
-    },
-    {
-      name: 'Teerth Yatra',
-      hint: 'a road that feeds the soul',
-      img: IMG.flags,
-      text: 'For the prayers she may not say loudly. For the ghats, bells, flags, water, and that quiet feeling of being held by something bigger.'
-    },
-    {
-      name: 'Pahad ka Ghar',
-      hint: 'a home where silence is full',
-      img: IMG.house,
-      text: 'A window facing the hills. Tea cooling slowly. No pressure to explain anything. Just a morning that lets her breathe completely.'
-    },
-    {
-      name: 'Travelling',
-      hint: 'roads that become stories',
-      img: IMG.road,
-      text: 'Not escape. Expansion. The kind of travelling where every misty turn reminds her that life can still surprise her gently.'
-    },
-    {
-      name: 'Peaceful Life',
-      hint: 'not a place, a feeling',
-      img: IMG.tea,
-      text: 'This is the real destination: calm mornings, safe conversations, fewer heavy nights, and a life that finally stops asking her to rush.'
-    }
+    { name: 'Kedarnath', hint: 'the mountain that keeps calling', img: IMG.kedarnath, text: 'For the dream that feels older than a plan. One day, when Kedarnath happens, the cold air will not feel harsh. It will feel like an answer.' },
+    { name: 'Teerth Yatra', hint: 'a road that feeds the soul', img: IMG.flags, text: 'For the prayers she may not say loudly. For the ghats, bells, flags, water, and that quiet feeling of being held by something bigger.' },
+    { name: 'Pahad ka Ghar', hint: 'a home where silence is full', img: IMG.house, text: 'A window facing the hills. Tea cooling slowly. No pressure to explain anything. Just a morning that lets her breathe completely.' },
+    { name: 'Travelling', hint: 'roads that become stories', img: IMG.road, text: 'Not escape. Expansion. The kind of travelling where every misty turn reminds her that life can still surprise her gently.' },
+    { name: 'Peaceful Life', hint: 'not a place, a feeling', img: IMG.tea, text: 'This is the real destination: calm mornings, safe conversations, fewer heavy nights, and a life that finally stops asking her to rush.' }
   ],
 
   init() {
@@ -751,7 +744,6 @@ const Level3 = {
   render() {
     const container = $('#l3-destinations');
     container.innerHTML = '';
-
     this.destinations.forEach((dest, index) => {
       const button = document.createElement('button');
       button.type = 'button';
@@ -768,7 +760,6 @@ const Level3 = {
       button.style.transform = 'translateX(-0.75rem)';
       button.onclick = () => this.tap(index, button, dest);
       container.appendChild(button);
-
       setTimeout(() => {
         button.style.transition = 'opacity 420ms var(--ease), transform 420ms var(--spring)';
         button.style.opacity = '1';
@@ -780,15 +771,12 @@ const Level3 = {
   tap(index, button, dest) {
     Utils.vibrate([18]);
     AudioManager.chime('soft');
-
     if (!this.unlocked.has(index)) {
       this.unlocked.add(index);
       button.classList.add('unlocked');
       $('.dest-status', button).textContent = 'open';
     }
-
     this.showCard(dest);
-
     if (this.unlocked.size >= this.destinations.length && !this.unlocking) {
       this.unlocking = true;
       setTimeout(() => this.unlock(), 1500);
@@ -802,23 +790,18 @@ const Level3 = {
     $('#dest-card-text').textContent = dest.text;
     overlay.classList.add('visible');
     $('#dest-card-close').onclick = () => overlay.classList.remove('visible');
-    overlay.onclick = event => {
-      if (event.target === overlay) overlay.classList.remove('visible');
-    };
+    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('visible'); };
   },
 
   async unlock() {
     $('#dest-card-overlay').classList.remove('visible');
     await Utils.wait(500);
     await SecretMoments.pocketSunrise();
-    await LevelManager.transition(4, {
-      title: 'It does not end at the map.',
-      sub: 'It turns inward, into memories.',
-      long: true
-    });
+    await LevelManager.transition(4, { title: 'It does not end at the map.', sub: 'It turns inward, into memories.', long: true });
   }
 };
 
+// ─── Level 4 ──────────────────────────────────────────────────────────
 const Level4 = {
   target: 12,
   tapped: new Set(),
@@ -841,9 +824,9 @@ const Level4 = {
     'Understanding each other in a way that made the memories real.'
   ],
   positions: [
-    [0.16, 0.28], [0.28, 0.43], [0.42, 0.32], [0.55, 0.46],
-    [0.70, 0.34], [0.82, 0.52], [0.67, 0.68], [0.51, 0.60],
-    [0.36, 0.72], [0.24, 0.62], [0.47, 0.80], [0.73, 0.78]
+    [0.16,0.28],[0.28,0.43],[0.42,0.32],[0.55,0.46],
+    [0.70,0.34],[0.82,0.52],[0.67,0.68],[0.51,0.60],
+    [0.36,0.72],[0.24,0.62],[0.47,0.80],[0.73,0.78]
   ],
 
   init() {
@@ -857,17 +840,14 @@ const Level4 = {
     this.resize();
     this.createStars();
     this.updateProgress();
-    this.canvas.onclick = event => this.onTap(event.clientX, event.clientY);
-    this.canvas.ontouchstart = event => {
-      event.preventDefault();
-      const touch = event.touches[0];
+    this.canvas.onclick = e => this.onTap(e.clientX, e.clientY);
+    this.canvas.ontouchstart = e => {
+      e.preventDefault();
+      const touch = e.touches[0];
       if (touch) this.onTap(touch.clientX, touch.clientY);
     };
     window.onresize = () => {
-      if (LevelManager.current === 4) {
-        this.resize();
-        this.createStars();
-      }
+      if (LevelManager.current === 4) { this.resize(); this.createStars(); }
     };
     cancelAnimationFrame(this.frame);
     this.animate();
@@ -886,7 +866,6 @@ const Level4 = {
     const top = window.innerHeight < 700 ? 90 : 120;
     const bottom = 90;
     const usableH = Math.max(260, window.innerHeight - top - bottom);
-
     this.stars = this.positions.map(([px, py], index) => ({
       x: window.innerWidth * px,
       y: top + usableH * py,
@@ -907,8 +886,9 @@ const Level4 = {
       const two = this.stars[b];
       if (!one || !two) return;
       const gradient = ctx.createLinearGradient(one.x, one.y, two.x, two.y);
-      gradient.addColorStop(0, 'rgba(215,183,106,.08)');
-      gradient.addColorStop(1, 'rgba(143,216,210,.36)');
+      gradient.addColorStop(0, 'rgba(215,183,106,.12)');
+      gradient.addColorStop(0.5, 'rgba(143,216,210,.52)');
+      gradient.addColorStop(1, 'rgba(217,139,168,.18)');
       ctx.strokeStyle = gradient;
       ctx.beginPath();
       ctx.moveTo(one.x, one.y);
@@ -920,14 +900,14 @@ const Level4 = {
       const isTapped = this.tapped.has(index);
       const pulse = 0.5 + 0.5 * Math.sin(t * 1.1 + star.phase);
       const alpha = isTapped ? 1 : 0.35 + 0.4 * pulse;
-      const radius = isTapped ? star.r * 1.35 : star.r;
+      const radius = isTapped ? star.r * 1.4 : star.r;
 
-      const glow = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, radius * 6);
-      glow.addColorStop(0, `rgba(215,183,106,${alpha * 0.22})`);
+      const glow = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, radius * 7);
+      glow.addColorStop(0, `rgba(215,183,106,${alpha * 0.28})`);
       glow.addColorStop(1, 'transparent');
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(star.x, star.y, radius * 6, 0, Math.PI * 2);
+      ctx.arc(star.x, star.y, radius * 7, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.fillStyle = isTapped ? `rgba(215,183,106,${alpha})` : `rgba(248,239,227,${alpha})`;
@@ -942,7 +922,6 @@ const Level4 = {
       ctx.font = '28px "Courier Prime", monospace';
       ctx.fillStyle = 'rgba(215,183,106,.8)';
       ctx.textAlign = 'center';
-      ctx.letterSpacing = '6px';
       ctx.fillText('JILEBI', window.innerWidth / 2, window.innerHeight / 2 + 12);
       ctx.restore();
     }
@@ -951,27 +930,16 @@ const Level4 = {
   },
 
   onTap(clientX, clientY) {
-    if (this.activePopup) {
-      this.activePopup.remove();
-      this.activePopup = null;
-    }
-
+    if (this.activePopup) { this.activePopup.remove(); this.activePopup = null; }
     const rect = this.canvas.getBoundingClientRect();
     const x = clientX - rect.left;
     const y = clientY - rect.top;
-    let hit = -1;
-    let best = Infinity;
-
+    let hit = -1, best = Infinity;
     this.stars.forEach((star, index) => {
       const distance = Math.hypot(x - star.x, y - star.y);
-      if (distance < 42 && distance < best) {
-        hit = index;
-        best = distance;
-      }
+      if (distance < 42 && distance < best) { hit = index; best = distance; }
     });
-
     if (hit < 0) return;
-
     if (!this.tapped.has(hit)) {
       const previous = [...this.tapped].at(-1);
       this.tapped.add(hit);
@@ -979,11 +947,8 @@ const Level4 = {
       Utils.vibrate([18]);
       AudioManager.tick();
       this.updateProgress();
-      if (this.tapped.size >= this.target) {
-        setTimeout(() => this.finish(), 900);
-      }
+      if (this.tapped.size >= this.target) setTimeout(() => this.finish(), 900);
     }
-
     this.showNote(this.stars[hit]);
   },
 
@@ -1007,9 +972,7 @@ const Level4 = {
     }, 2600);
   },
 
-  updateProgress() {
-    $('#l4-progress').textContent = `${this.tapped.size} / ${this.target} memories discovered`;
-  },
+  updateProgress() { $('#l4-progress').textContent = `${this.tapped.size} / ${this.target} memories discovered`; },
 
   async finish() {
     if (this.nameVisible) return;
@@ -1021,12 +984,10 @@ const Level4 = {
   }
 };
 
-const Level5 = {
-  init() {
-    GameEngine.init();
-  }
-};
+// ─── Level 5 ──────────────────────────────────────────────────────────
+const Level5 = { init() { GameEngine.init(); } };
 
+// ─── Game Engine ──────────────────────────────────────────────────────
 const GameEngine = {
   completed: new Set(),
   total: 5,
@@ -1035,33 +996,18 @@ const GameEngine = {
   moodAnswers: [],
   games: ['hearts', 'overthink', 'cat', 'house', 'mood'],
   moodQuestions: [
-    {
-      q: 'Your current inner weather is...',
-      opts: ['🌧️ Rain on window', '🏔️ Mountain silence', '💕 Soft chaos', '🌙 Midnight thoughts']
-    },
-    {
-      q: 'A perfect calm morning has...',
-      opts: ['☕ Tea', '🔕 No notifications', '🏔️ A view', '🎵 A song on low']
-    },
-    {
-      q: 'When feelings get heavy, you usually...',
-      opts: ['🤫 Go quiet', '🌪️ Overthink', '🎧 Listen to songs', '🤍 Need one safe person']
-    },
-    {
-      q: 'Your travel mood is...',
-      opts: ['🏔️ Kedarnath calling', '🧭 Any road, bas chalo', '🌫️ Mist and windows', '✨ Peaceful yatra']
-    },
-    {
-      q: 'What should this year bring first?',
-      opts: ['💪 Strength', '🕊️ Peace', '🧳 Travel', '🤍 A lighter heart']
-    }
+    { q: 'Your current inner weather is...', opts: ['Rain on window', 'Mountain silence', 'Soft chaos', 'Midnight thoughts'] },
+    { q: 'A perfect calm morning has...', opts: ['Tea', 'No notifications', 'A view', 'A song on low'] },
+    { q: 'When feelings get heavy, you usually...', opts: ['Go quiet', 'Overthink', 'Listen to songs', 'Need one safe person'] },
+    { q: 'Your travel mood is...', opts: ['Kedarnath calling', 'Any road, bas chalo', 'Mist and windows', 'Peaceful yatra'] },
+    { q: 'What should this year bring first?', opts: ['Strength', 'Peace', 'Travel', 'A lighter heart'] }
   ],
   moodResults: [
-    ['Mountain Silence Mode', '🏔️', 'Grounded outside, deep inside. The kind of calm that still has a thousand thoughts behind it.'],
-    ['Tea And Safe Talks Mode', '☕', 'Warm, honest, a little emotional. The kind of Jilebi who needs gentleness more than advice.'],
-    ['Soft Chaos Mode', '💕', 'A whole storm, but somehow still sweet. Laughing, thinking, feeling, all at once.'],
-    ['Yatra Heart Mode', '✨', 'Your soul wants roads, bells, mountains, and that feeling of being quietly protected.'],
-    ['Quiet Fire Mode', '🤍', 'Not loud. Not easy to read. But strong in a way that keeps showing up.']
+    ['Mountain Silence Mode', '\u25b3', 'Grounded outside, deep inside. The kind of calm that still has a thousand thoughts behind it.'],
+    ['Tea And Safe Talks Mode', '\u2615', 'Warm, honest, a little emotional. The kind of Jilebi who needs gentleness more than advice.'],
+    ['Soft Chaos Mode', '\u223f', 'A whole storm, but somehow still sweet. Laughing, thinking, feeling, all at once.'],
+    ['Yatra Heart Mode', '\u2726', 'Your soul wants roads, bells, mountains, and that feeling of being quietly protected.'],
+    ['Quiet Fire Mode', '\u25c7', 'Not loud. Not easy to read. But strong in a way that keeps showing up.']
   ],
 
   init() {
@@ -1102,20 +1048,15 @@ const GameEngine = {
     if (card) card.classList.add('done');
     Utils.saveProgressPatch({ games: [...this.completed] });
     this.updateProgress();
-
-    if (this.completed.size >= this.total) {
-      setTimeout(() => this.unlock(), 850);
-    }
+    if (this.completed.size >= this.total) setTimeout(() => this.unlock(), 850);
   },
 
-  updateProgress() {
-    $('#l5-progress').textContent = `${this.completed.size} / ${this.total} games played`;
-  },
+  updateProgress() { $('#l5-progress').textContent = `${this.completed.size} / ${this.total} games played`; },
 
   startHearts() {
     clearInterval(this.heartTimer);
     this.heartsCount = 0;
-    $('#hearts-counter').textContent = `💕 0 / ${this.heartsTarget}`;
+    $('#hearts-counter').textContent = `0 / ${this.heartsTarget}`;
     $('#hearts-quote').style.display = 'none';
     $('#hearts-done-btn').style.display = 'none';
     const arena = $('#hearts-arena');
@@ -1126,7 +1067,7 @@ const GameEngine = {
       const dot = document.createElement('button');
       dot.type = 'button';
       dot.className = 'falling-heart';
-      dot.textContent = ['💕', '💖', '🤍', '🌸', '✨'][Utils.randInt(0, 4)];
+      dot.textContent = ['\u2726', '\u25cc', '\u25c7', '\u2736'][Utils.randInt(0, 3)];
       dot.style.left = `${Utils.rand(6, 82)}%`;
       dot.style.setProperty('--fall-dur', `${Utils.rand(3.2, 5.6)}s`);
       dot.onclick = () => {
@@ -1134,11 +1075,9 @@ const GameEngine = {
         dot.dataset.hit = '1';
         dot.style.animation = 'starBurst 280ms var(--ease) forwards';
         this.heartsCount += 1;
-        $('#hearts-counter').textContent = `💕 ${this.heartsCount} / ${this.heartsTarget}`;
-        Utils.vibrate([12]);
-        AudioManager.tick();
+        $('#hearts-counter').textContent = `${this.heartsCount} / ${this.heartsTarget}`;
+        Utils.vibrate([12]); AudioManager.tick();
         setTimeout(() => dot.remove(), 300);
-
         if (this.heartsCount >= this.heartsTarget) {
           $('#hearts-quote').style.display = 'block';
           $('#hearts-done-btn').style.display = 'inline-flex';
@@ -1148,7 +1087,6 @@ const GameEngine = {
       arena.appendChild(dot);
       setTimeout(() => dot.remove(), 6200);
     };
-
     spawn();
     this.heartTimer = setInterval(spawn, 520);
   },
@@ -1159,14 +1097,8 @@ const GameEngine = {
     const char = $('#mountain-char');
     const quote = $('#overthink-quote');
     const done = $('#overthink-done-btn');
-    const labels = [
-      'Suspiciously calm.',
-      'One tab open in the mind.',
-      'Several tabs. Music also playing.',
-      'Whole courtroom inside.',
-      'Jilebi Mode: every thought has a sequel 🌪️'
-    ];
-    const symbols = ['🏔️', '🤔', '💭', '🌪️', '✨'];
+    const labels = ['Suspiciously calm.', 'One tab open in the mind.', 'Several tabs. Music also playing.', 'Whole courtroom inside.', 'Jilebi Mode: every thought has a sequel.'];
+    const symbols = ['\u25b3', '\u00b7', '\u2234', '\u223f', '\u2736'];
 
     slider.value = 0;
     label.textContent = 'Slide slowly...';
@@ -1180,10 +1112,7 @@ const GameEngine = {
       char.textContent = symbols[value];
       char.style.transform = 'scale(1.15)';
       setTimeout(() => { char.style.transform = 'scale(1)'; }, 180);
-      if (value >= 3) {
-        quote.style.display = 'block';
-        done.style.display = 'inline-flex';
-      }
+      if (value >= 3) { quote.style.display = 'block'; done.style.display = 'inline-flex'; }
     };
   },
 
@@ -1196,7 +1125,7 @@ const GameEngine = {
     $('#cat-quote').style.display = 'none';
     $('#cat-done-btn').style.display = 'none';
     counter.textContent = '0 / 5';
-    cat.textContent = '🐱';
+    cat.textContent = '🐈';
 
     const move = () => {
       const rect = arena.getBoundingClientRect();
@@ -1210,19 +1139,15 @@ const GameEngine = {
       if (this.catCount >= 5) return;
       this.catCount += 1;
       counter.textContent = `${this.catCount} / 5`;
-      cat.textContent = ['😺', '🙀', '😽', '🐾', '💕'][this.catCount - 1];
+      cat.textContent = ['😸', '😻', '🐾', '💛', '✨'][this.catCount - 1];
       cat.style.transform = 'scale(1.08)';
       setTimeout(() => { cat.style.transform = 'scale(1)'; }, 180);
-      Utils.vibrate([12]);
-      AudioManager.tick();
-
+      Utils.vibrate([12]); AudioManager.tick();
       if (this.catCount >= 5) {
         clearInterval(this.catTimer);
         $('#cat-quote').style.display = 'block';
         $('#cat-done-btn').style.display = 'inline-flex';
-      } else {
-        move();
-      }
+      } else { move(); }
     };
   },
 
@@ -1231,7 +1156,6 @@ const GameEngine = {
     $('#house-preview-text').textContent = 'Choose all three pieces';
     $('#house-quote').style.display = 'none';
     $('#house-done-btn').style.display = 'none';
-
     $$('.house-choice-btn').forEach(button => {
       button.classList.remove('selected');
       button.onclick = () => {
@@ -1247,7 +1171,6 @@ const GameEngine = {
   updateHousePreview() {
     const values = Object.values(this.houseChoices).filter(Boolean);
     $('#house-preview-text').textContent = values.length ? values.join(' + ') : 'Choose all three pieces';
-
     if (values.length === 3) {
       $('#house-quote').style.display = 'block';
       $('#house-done-btn').style.display = 'inline-flex';
@@ -1265,12 +1188,11 @@ const GameEngine = {
 
   showMoodQuestion() {
     const current = this.moodQuestions[this.moodQuestion];
-    $('#mood-title').textContent = 'Which Jilebi Today? ✨';
+    $('#mood-title').textContent = 'Which Jilebi Today?';
     $('#mood-sub').textContent = `Question ${this.moodQuestion + 1} of ${this.moodQuestions.length}`;
     $('#mood-question').textContent = current.q;
     const options = $('#mood-options');
     options.innerHTML = '';
-
     current.opts.forEach((option, index) => {
       const button = document.createElement('button');
       button.type = 'button';
@@ -1285,7 +1207,6 @@ const GameEngine = {
     this.moodAnswers.push(index);
     this.moodQuestion += 1;
     AudioManager.tick();
-
     if (this.moodQuestion < this.moodQuestions.length) {
       $('#mood-question').style.opacity = '0';
       $('#mood-options').style.opacity = '0';
@@ -1293,9 +1214,7 @@ const GameEngine = {
       this.showMoodQuestion();
       $('#mood-question').style.opacity = '1';
       $('#mood-options').style.opacity = '1';
-    } else {
-      this.showMoodResult();
-    }
+    } else { this.showMoodResult(); }
   },
 
   showMoodResult() {
@@ -1317,11 +1236,11 @@ const GameEngine = {
   },
 
   confetti() {
-    for (let i = 0; i < 26; i += 1) {
+    for (let i = 0; i < 32; i += 1) {
       setTimeout(() => {
         const piece = document.createElement('span');
         piece.className = 'confetti-piece';
-        piece.textContent = ['✨', '💕', '🌸', '🤍', '🏔️'][Utils.randInt(0, 4)];
+        piece.textContent = ['\u2726', '\u25cc', '\u25c7', '🎂', '✨'][Utils.randInt(0, 4)];
         piece.style.left = `${Utils.rand(5, 95)}vw`;
         piece.style.setProperty('--fall-dur', `${Utils.rand(2.6, 4.8)}s`);
         document.body.appendChild(piece);
@@ -1331,9 +1250,10 @@ const GameEngine = {
   }
 };
 
+// ─── Level 6 ──────────────────────────────────────────────────────────
 const Level6 = {
   letterLines: [
-    { text: 'Jilebi 🌸,', cls: 'greeting' },
+    { text: 'Jilebi,', cls: 'greeting' },
     { text: '', cls: 'blank' },
     { text: 'It is crazy how many memories can fit into a short time.', cls: '' },
     { text: 'Random reels. Late-night chats. Long calls that did not feel long while they were happening.', cls: '' },
@@ -1355,14 +1275,12 @@ const Level6 = {
     { text: 'Your quiet heart is already full of meaning.', cls: '' },
     { text: 'Your soft chaos is still soft. Your strength is still real.', cls: '' },
     { text: '', cls: 'blank' },
-    { text: 'Happy Birthday, jilebiii 🤍', cls: 'sign-off' },
+    { text: 'Happy Birthday, jilebiii.', cls: 'sign-off' },
     { text: 'Your vibe, your presence, and the memories we created will always mean a lot to me.', cls: 'sign-off' },
     { text: 'May this year bring peace, happiness, strength, and everything your heart is quietly wishing for.', cls: 'sign-off' }
   ],
 
-  init() {
-    this.renderLetter();
-  },
+  init() { this.renderLetter(); },
 
   async renderLetter() {
     const paper = $('#l6-paper');
@@ -1395,6 +1313,7 @@ const Level6 = {
       await Utils.wait(line.cls === 'blank' ? 190 : 165);
       if (line.text) span.textContent = line.text;
       span.classList.add('revealed');
+      await Utils.wait(60);
       span.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
@@ -1403,22 +1322,25 @@ const Level6 = {
     AudioManager.chime('deep');
     await Utils.wait(1050);
     continueBtn.classList.add('visible');
+
+    // Connect to wish jar
+    continueBtn.onclick = () => WishJar.show();
   }
 };
 
+// ─── Level 7 ──────────────────────────────────────────────────────────
 const Level7 = {
   runToken: 0,
 
   init() {
     this.runToken += 1;
     const token = this.runToken;
-    $$('.cinematic-scene').forEach(scene => {
-      scene.classList.remove('active');
-      scene.style.opacity = '';
-    });
+    $$('.cinematic-scene').forEach(scene => { scene.classList.remove('active'); scene.style.opacity = ''; });
     $$('.final-quote-line').forEach(line => line.classList.remove('visible'));
     $('#final-restart-btn').classList.remove('visible');
     $('#rising-lantern').classList.remove('visible');
+    $('#final-wish-line').textContent = '';
+    $('#final-wish-line').classList.remove('visible');
     this.run(token);
   },
 
@@ -1446,12 +1368,12 @@ const Level7 = {
   createSnow() {
     const container = $('#snowfall-container');
     container.innerHTML = '';
-    for (let i = 0; i < 66; i += 1) {
+    for (let i = 0; i < 72; i += 1) {
       const snow = document.createElement('span');
       snow.className = 'snow-particle';
       snow.textContent = '\u00b7';
       snow.style.left = `${Utils.rand(0, 100)}vw`;
-      snow.style.fontSize = `${Utils.rand(10, 22)}px`;
+      snow.style.fontSize = `${Utils.rand(10, 24)}px`;
       snow.style.setProperty('--snow-dur', `${Utils.rand(5, 10)}s`);
       snow.style.animationDelay = `${Utils.rand(0, 4)}s`;
       container.appendChild(snow);
@@ -1461,32 +1383,24 @@ const Level7 = {
   launchLanterns() {
     const container = $('#lanterns-container');
     container.innerHTML = '';
-    for (let i = 0; i < 18; i += 1) {
+    for (let i = 0; i < 22; i += 1) {
       setTimeout(() => {
         const lantern = document.createElement('span');
         lantern.className = 'lantern';
         lantern.style.left = `${Utils.rand(5, 94)}vw`;
         lantern.style.setProperty('--rise-dur', `${Utils.rand(8, 13)}s`);
         container.appendChild(lantern);
-      }, i * 260);
+      }, i * 240);
     }
   },
 
   sparkleStars() {
     const container = $('#scene3-stars');
     container.innerHTML = '';
-    for (let i = 0; i < 42; i += 1) {
+    for (let i = 0; i < 48; i += 1) {
       const star = document.createElement('span');
       star.textContent = '\u2726';
-      star.style.cssText = `
-        position:absolute;
-        left:${Utils.rand(2, 98)}%;
-        top:${Utils.rand(4, 92)}%;
-        color:rgba(248,239,227,.75);
-        font-size:${Utils.rand(8, 16)}px;
-        animation: quoteDrift ${Utils.rand(3, 7)}s ease-in-out infinite;
-        animation-delay:-${Utils.rand(0, 5)}s;
-      `;
+      star.style.cssText = `position:absolute;left:${Utils.rand(2, 98)}%;top:${Utils.rand(4, 92)}%;color:rgba(248,239,227,.75);font-size:${Utils.rand(8, 18)}px;animation:quoteDrift ${Utils.rand(3, 7)}s ease-in-out infinite;animation-delay:-${Utils.rand(0, 5)}s;`;
       container.appendChild(star);
     }
   },
@@ -1500,6 +1414,15 @@ const Level7 = {
       AudioManager.chime('soft');
     }
 
+    // Show the wish if one was made
+    if (WishJar.wish) {
+      await Utils.wait(1200);
+      const wishLine = $('#final-wish-line');
+      wishLine.textContent = `✦ "${WishJar.wish}"`;
+      wishLine.classList.add('visible');
+      AudioManager.chime('soft');
+    }
+
     await Utils.wait(2200);
     if (token !== this.runToken) return;
     $('#rising-lantern').classList.add('visible');
@@ -1510,15 +1433,12 @@ const Level7 = {
   }
 };
 
+// ─── Secret Moments ───────────────────────────────────────────────────
 const SecretMoments = {
   async pocketSunrise() {
     const overlay = document.createElement('div');
     overlay.className = 'pocket-sunrise';
-    overlay.innerHTML = `
-      <h2>JILEBI 🌸</h2>
-      <p>For one second, the night becomes a morning from her dream.</p>
-      <p>21 / 05 / 2006</p>
-    `;
+    overlay.innerHTML = `<h2>JILEBI</h2><p>For one second, the night becomes a morning from her dream.</p><p>21 / 05 / 2006</p>`;
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add('visible'));
     AudioManager.chime('unlock');
@@ -1529,13 +1449,15 @@ const SecretMoments = {
   }
 };
 
+// ─── Easter Egg ───────────────────────────────────────────────────────
 const EasterEgg = {
   taps: 0,
   timer: null,
   messages: [
-    'Secret: calm mornings are already looking for her 🌸',
-    'Secret: the moon remembered 21/05/2006 🌙',
-    'Secret: some silences are full, not empty 🤍'
+    'Secret: calm mornings are already looking for her.',
+    'Secret: the moon remembered 21/05/2006.',
+    'Secret: some silences are full, not empty.',
+    'Secret: she is the kind of person who makes places feel more alive without even trying.'
   ],
 
   init() {
@@ -1547,7 +1469,6 @@ const EasterEgg = {
     this.taps += 1;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => { this.taps = 0; }, 2200);
-
     if (this.taps === 3) {
       const msg = $('#easter-msg');
       msg.textContent = this.messages[Utils.randInt(0, this.messages.length - 1)];
@@ -1555,11 +1476,7 @@ const EasterEgg = {
       AudioManager.chime('soft');
       setTimeout(() => msg.classList.remove('visible'), 4200);
     }
-
-    if (this.taps >= 7) {
-      this.showSecret();
-      this.taps = 0;
-    }
+    if (this.taps >= 7) { this.showSecret(); this.taps = 0; }
   },
 
   showSecret() {
@@ -1568,14 +1485,21 @@ const EasterEgg = {
   }
 };
 
+// ─── Expose globals ───────────────────────────────────────────────────
 window.GameEngine = GameEngine;
 window.LevelManager = LevelManager;
 
+// ─── Boot ─────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
   ImagePreloader.preload();
   ParticleSystem.init();
   AudioManager.init();
   EasterEgg.init();
+
+  // Birthday loading text
+  if (Birthday.isToday()) {
+    $('#loading-text').textContent = `Happy ${Birthday.age()}th Birthday, Jilebi 🎂`;
+  }
 
   await Utils.wait(700);
   const loading = $('#loading-screen');
